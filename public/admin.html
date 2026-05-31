@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — TechBandits Pool</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="site-logo">🏈 TechBandits</a>
+    <nav class="site-nav">
+      <a href="/">Picks</a>
+      <a href="/leaderboard">Standings</a>
+      <a href="/admin" class="active">Admin</a>
+    </nav>
+    <div class="header-user">
+      <span class="user-name" id="user-name"></span>
+      <button class="btn-link" id="signout-btn">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <h1 class="page-title">Admin Dashboard</h1>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="picksheet">Picksheet Builder</button>
+    <button class="tab-btn" data-tab="invites">Invites</button>
+    <button class="tab-btn" data-tab="users">Users</button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </div>
+
+  <!-- ── Picksheet Builder ─────────────────────────────────────────────── -->
+  <div id="tab-picksheet" class="tab-panel active">
+    <div class="card" style="margin-bottom:1rem">
+      <h2 style="font-size:1rem;margin-bottom:1rem">Fetch Available Games</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 auto">
+          <label class="form-label">Sport</label>
+          <select class="form-select" id="fetch-sport" style="width:140px">
+            <option value="all">All (NCAAF + NFL)</option>
+            <option value="ncaaf">NCAAF only</option>
+            <option value="nfl">NFL only</option>
+          </select>
+        </div>
+        <div style="padding-bottom:0.1rem">
+          <button class="btn btn-secondary" id="fetch-games-btn">Fetch Games</button>
+        </div>
+        <span id="api-remaining" style="font-size:0.8rem;color:var(--text-muted);align-self:flex-end"></span>
+      </div>
+    </div>
+
+    <div id="games-loading" class="loading" style="display:none">Fetching from Odds API…</div>
+    <div id="games-fetch-result" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">
+        <span id="games-count-label" style="font-size:0.875rem;color:var(--text-muted)"></span>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+          <span id="selected-count" style="font-size:0.875rem;font-weight:600"></span>
+          <button class="btn btn-sm btn-secondary" id="select-all-btn">Select All</button>
+          <button class="btn btn-sm btn-secondary" id="clear-all-btn">Clear All</button>
+        </div>
+      </div>
+      <div class="admin-grid" id="available-games-grid"></div>
+    </div>
+
+    <div id="publish-section" style="display:none;margin-top:1.5rem">
+      <div class="card">
+        <h2 style="font-size:1rem;margin-bottom:1rem">Publish Week</h2>
+        <div class="form-row" style="margin-bottom:0.75rem">
+          <div class="form-group">
+            <label class="form-label">Week Number</label>
+            <input type="number" class="form-input" id="pub-week" min="1" max="20" style="width:80px">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Season Year</label>
+            <input type="number" class="form-input" id="pub-season" min="2024" max="2030" style="width:100px">
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px">
+            <label class="form-label">Lock Time (pick deadline — Saturday noon ET)</label>
+            <input type="datetime-local" class="form-input" id="pub-lock">
+          </div>
+        </div>
+        <div id="tiebreaker-display" class="alert alert-info" style="margin-bottom:0.75rem;display:none">
+          Tiebreaker game: <strong id="tiebreaker-label"></strong>
+        </div>
+        <button class="btn btn-primary" id="publish-btn">Publish Week</button>
+        <span id="publish-msg" style="font-size:0.875rem;margin-left:0.75rem"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Invites ───────────────────────────────────────────────────────── -->
+  <div id="tab-invites" class="tab-panel">
+    <div class="card" style="margin-bottom:1rem">
+      <h2 style="font-size:1rem;margin-bottom:1rem">Generate Invite Link</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;max-width:340px">
+          <label class="form-label">Email address</label>
+          <input type="email" class="form-input" id="invite-email" placeholder="friend@example.com">
+        </div>
+        <div style="padding-bottom:0.1rem">
+          <button class="btn btn-primary" id="generate-invite-btn">Generate Link</button>
+        </div>
+      </div>
+      <div id="new-invite-url" style="display:none;margin-top:0.75rem">
+        <div class="invite-url-box">
+          <code id="invite-url-text"></code>
+          <button class="btn btn-sm btn-secondary" id="copy-invite-btn">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:1rem;margin-bottom:1rem">All Invites</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Created</th>
+              <th>Status</th>
+              <th>Used By</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="invites-body"></tbody>
+        </table>
+      </div>
+      <div id="invites-empty" class="empty-state" style="display:none;padding:1.5rem">
+        <p>No invites yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Users ─────────────────────────────────────────────────────────── -->
+  <div id="tab-users" class="tab-panel">
+    <div class="card">
+      <h2 style="font-size:1rem;margin-bottom:1rem">League Members</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Joined</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+      <div id="users-empty" class="empty-state" style="display:none;padding:1.5rem">
+        <p>No users yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Settings ──────────────────────────────────────────────────────── -->
+  <div id="tab-settings" class="tab-panel">
+    <div class="card" style="max-width:500px">
+      <h2 style="font-size:1rem;margin-bottom:0.5rem">Manual Lock Override</h2>
+      <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">
+        Force lock or unlock the current week's picksheet, overriding the automatic schedule.
+      </p>
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="btn btn-secondary" id="lock-toggle-btn">Loading…</button>
+        <span id="lock-status" style="font-size:0.875rem;color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:500px;margin-top:1rem">
+      <h2 style="font-size:1rem;margin-bottom:0.5rem">Force Score Poll</h2>
+      <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">
+        Immediately poll The Odds API for updated scores instead of waiting for the next 10-minute cycle.
+      </p>
+      <button class="btn btn-secondary" id="poll-now-btn">Poll Now</button>
+      <span id="poll-msg" style="font-size:0.875rem;margin-left:0.75rem"></span>
+    </div>
+  </div>
+</main>
+
+<script src="/js/admin.js"></script>
+</body>
+</html>

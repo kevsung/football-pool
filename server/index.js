@@ -1,0 +1,126 @@
+require('dotenv').config();
+const express = require('express');
+const session = require('express-session');
+const passport = require('passport');
+const helmet = require('helmet');
+const path = require('path');
+const cron = require('node-cron');
+
+const authRoutes = require('./routes/auth');
+const oddsRoutes = require('./routes/odds');
+const picksRoutes = require('./routes/picks');
+const scoresRoutes = require('./routes/scores');
+const standingsRoutes = require('./routes/standings');
+const adminRoutes = require('./routes/admin');
+const { isAuthenticated } = require('./middleware/auth');
+const dataStore = require('./utils/dataStore');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ── Security ──────────────────────────────────────────────────────────────────
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'https://lh3.googleusercontent.com'],
+    },
+  },
+}));
+
+// ── Body / session ────────────────────────────────────────────────────────────
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'change-me-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  },
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ── API routes ────────────────────────────────────────────────────────────────
+
+app.use('/auth', authRoutes);
+app.use('/api/odds', isAuthenticated, oddsRoutes);
+app.use('/api/picks', isAuthenticated, picksRoutes);
+app.use('/api/scores', isAuthenticated, scoresRoutes);
+app.use('/api/standings', isAuthenticated, standingsRoutes);
+app.use('/api/admin', adminRoutes); // adminOnly applied inside the router
+
+app.get('/api/config', isAuthenticated, (req, res) => {
+  res.json({ weekNumber: dataStore.getCurrentWeekNumber(), user: req.user });
+});
+
+app.get('/api/weeks/:weekNumber', isAuthenticated, (req, res) => {
+  const week = dataStore.getWeek(parseInt(req.params.weekNumber));
+  if (!week) return res.status(404).json({ error: 'Week not found' });
+  res.json(week);
+});
+
+app.get('/api/weeks', isAuthenticated, (req, res) => {
+  const weekNumbers = dataStore.getAllWeekNumbers();
+  res.json(weekNumbers);
+});
+
+// ── HTML page routes (auth-gated) ─────────────────────────────────────────────
+
+app.get('/', isAuthenticated, (req, res) =>
+  res.sendFile(path.join(__dirname, '../public/index.html')));
+
+app.get('/leaderboard', isAuthenticated, (req, res) =>
+  res.sendFile(path.join(__dirname, '../public/leaderboard.html')));
+
+app.get('/admin', isAuthenticated, (req, res) => {
+  if (req.user.role !== 'admin') return res.redirect('/');
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+app.get('/login', (req, res) => {
+  if (req.isAuthenticated()) return res.redirect('/');
+  res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
+app.get('/invite', (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.redirect('/login');
+  req.session.inviteToken = token;
+  res.redirect('/auth/google');
+});
+
+app.get('/access-denied', (req, res) =>
+  res.sendFile(path.join(__dirname, '../public/access-denied.html')));
+
+// ── Static files ──────────────────────────────────────────────────────────────
+
+app.use(express.static(path.join(__dirname, '../public')));
+
+// ── Score polling cron (every 10 minutes) ────────────────────────────────────
+
+cron.schedule('*/10 * * * *', async () => {
+  try {
+    await scoresRoutes.pollAndUpdateScores();
+  } catch (err) {
+    console.error('[cron] Score poll failed:', err.message);
+  }
+});
+
+// ── Startup ───────────────────────────────────────────────────────────────────
+
+dataStore.ensureDataFiles();
+
+app.listen(PORT, () => {
+  console.log(`Football pool running on port ${PORT} — ${process.env.BASE_URL || `http://localhost:${PORT}`}`);
+});

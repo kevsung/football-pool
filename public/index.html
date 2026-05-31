@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pick'em — TechBandits Pool</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="site-logo">🏈 TechBandits</a>
+    <nav class="site-nav">
+      <a href="/" class="active">Picks</a>
+      <a href="/leaderboard">Standings</a>
+      <span id="admin-link-wrap" style="display:none"><a href="/admin">Admin</a></span>
+    </nav>
+    <div class="header-user">
+      <span class="user-name" id="user-name"></span>
+      <button class="btn-link" id="signout-btn">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div id="loading" class="loading">Loading…</div>
+  <div id="no-week" class="empty-state" style="display:none">
+    <div style="font-size:2rem">🏈</div>
+    <h2>No picksheet yet</h2>
+    <p>The admin hasn't published this week's games. Check back soon.</p>
+  </div>
+
+  <div id="pick-content" style="display:none">
+    <div class="week-header">
+      <h1 id="week-title">Week 1 Picks</h1>
+      <div class="lock-countdown" id="countdown-wrap">
+        Lock: <span class="time" id="countdown">—</span>
+      </div>
+    </div>
+
+    <div id="submitted-banner" class="submitted-banner" style="display:none">
+      ✅ Your picks are locked in! Results will update as games finish.
+    </div>
+
+    <div class="alert alert-info" id="lock-alert" style="display:none">
+      🔒 Picks are locked for this week.
+    </div>
+
+    <div class="pick-counter" id="pick-counter">
+      <div class="counter-item">
+        <span class="counter-label">Picks</span>
+        <span class="counter-value incomplete" id="cnt-picks">0 / 15</span>
+      </div>
+      <div class="counter-item">
+        <span class="counter-label">Key Pick</span>
+        <span class="counter-value incomplete" id="cnt-key">None</span>
+      </div>
+      <div class="counter-item">
+        <span class="counter-label">Tiebreaker</span>
+        <span class="counter-value incomplete" id="cnt-tb">—</span>
+      </div>
+    </div>
+
+    <div class="tiebreaker-section">
+      <label for="tiebreaker-input">
+        Tiebreaker: Predict the combined final score of the <strong id="tb-game-label">MNF game</strong>
+        <span id="tb-game-teams"></span>
+      </label>
+      <input type="number" id="tiebreaker-input" min="0" max="200" placeholder="e.g. 47">
+    </div>
+
+    <div class="games-grid" id="games-grid"></div>
+
+    <div class="submit-row">
+      <button class="btn btn-primary btn-submit" id="submit-btn" disabled>Submit Picks</button>
+    </div>
+  </div>
+</main>
+
+<script src="/js/picks.js"></script>
+</body>
+</html>

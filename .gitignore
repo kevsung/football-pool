@@ -1,3 +1,8 @@
+# Runtime data — managed on server, not in repo
+data/**/*.json
+!data/users.json
+!data/invites.json
+
 # Logs
 logs
 *.log
