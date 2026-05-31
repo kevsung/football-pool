@@ -162,8 +162,20 @@ router.get('/google/callback', (req, res, next) => {
       });
       return res.redirect('/access-denied');
     }
-    log('authentication succeeded', { userId: req.user?.id });
-    res.redirect('/');
+
+    log('authentication succeeded — saving session before redirect', { userId: req.user?.id });
+
+    // Explicitly save the session before redirecting. Without this, the
+    // file-store write may not complete before the browser follows the redirect,
+    // causing the next request to arrive with no session and kicking the user
+    // back to the login page.
+    req.session.save(saveErr => {
+      if (saveErr) {
+        log('session save failed', { message: saveErr.message, stack: saveErr.stack });
+        return res.redirect('/access-denied');
+      }
+      res.redirect('/');
+    });
   });
 });
 

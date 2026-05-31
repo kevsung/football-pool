@@ -20,6 +20,10 @@ const isProd = process.env.NODE_ENV === 'production';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Render's (and any single-hop) reverse proxy so that
+// req.protocol is 'https' and secure cookies are set correctly.
+app.set('trust proxy', 1);
+
 // ── Security ──────────────────────────────────────────────────────────────────
 
 app.use(helmet({
@@ -58,7 +62,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProd,         // HTTPS-only in production
+    secure: isProd,         // requires HTTPS; safe because trust proxy is set
     httpOnly: true,
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
