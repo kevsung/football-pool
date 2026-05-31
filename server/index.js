@@ -15,6 +15,8 @@ const adminRoutes = require('./routes/admin');
 const { isAuthenticated } = require('./middleware/auth');
 const dataStore = require('./utils/dataStore');
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -37,13 +39,28 @@ app.use(helmet({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// In production, persist sessions to disk so they survive restarts.
+// In development, MemoryStore is fine (no disk I/O, no extra setup).
+let sessionStore;
+if (isProd) {
+  const FileStore = require('session-file-store')(session);
+  sessionStore = new FileStore({
+    path: path.join(__dirname, '../data/sessions'),
+    ttl: 7 * 24 * 60 * 60, // seconds — matches cookie maxAge
+    retries: 1,
+    logFn: () => {},        // suppress verbose file-store logging
+  });
+}
+
 app.use(session({
+  store: sessionStore,      // undefined in dev → falls back to MemoryStore
   secret: process.env.SESSION_SECRET || 'change-me-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProd,         // HTTPS-only in production
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   },
 }));

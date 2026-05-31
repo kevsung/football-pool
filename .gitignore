@@ -3,6 +3,9 @@ data/**/*.json
 !data/users.json
 !data/invites.json
 
+# Session files written by session-file-store
+data/sessions/
+
 # Logs
 logs
 *.log
