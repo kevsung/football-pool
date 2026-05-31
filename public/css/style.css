@@ -141,23 +141,6 @@ input, select, textarea { font-family: inherit; }
 }
 .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
 
-/* theme toggle */
-.theme-toggle {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  border-radius: var(--radius);
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  transition: color 0.15s, border-color 0.15s;
-  flex-shrink: 0;
-}
-.theme-toggle:hover { color: var(--text); border-color: var(--text-muted); }
-
 /* old btn-link kept for backward compat */
 .btn-link {
   background: none;
@@ -628,6 +611,79 @@ tr:hover td { background: var(--bg-hover); }
 .loading     { text-align: center; padding: 3rem; color: var(--text-muted); }
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
 .empty-state p { margin-top: 0.5rem; font-size: 0.875rem; }
+
+/* ── Settings page ────────────────────────────────────────────────────── */
+.settings-section { max-width: 520px; }
+.settings-section + .settings-section { margin-top: 1rem; }
+
+/* Remove default fieldset chrome */
+.settings-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.settings-fieldset > legend {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  padding: 0;
+  margin-bottom: 0.4rem;
+  /* float trick keeps legend in normal flow */
+  float: left;
+  width: 100%;
+}
+.settings-fieldset > legend + * { clear: left; }
+
+.settings-hint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.radio-group { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.radio-option:hover { border-color: var(--text-muted); background: var(--bg-hover); }
+
+.radio-option input[type="radio"] {
+  margin-top: 0.2rem;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+/* Highlight the card when its radio is checked */
+.radio-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(26,116,49,.06);
+}
+[data-theme="dark"] .radio-option:has(input:checked) { background: rgba(63,185,80,.07); }
+
+.radio-details { display: flex; flex-direction: column; gap: 0.2rem; }
+.radio-title   { font-weight: 600; font-size: 0.9rem; color: var(--text); }
+.radio-desc    { font-size: 0.8rem; color: var(--text-muted); }
+
+/* Account info grid */
+.account-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.9rem;
+}
+.account-label { color: var(--text-muted); font-weight: 500; }
+.account-value { color: var(--text); word-break: break-all; }
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 600px) {

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — TechBandits Pool</title>
+  <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="site-logo">🏈 <span class="pool-name">TechBandits Pool</span></a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/">Picks</a>
+      <a href="/leaderboard">Standings</a>
+      <a href="/settings" class="active" aria-current="page">Settings</a>
+      <a href="/admin" id="admin-link" style="display:none">Admin</a>
+    </nav>
+    <div class="header-actions">
+      <span class="user-name" id="user-name"></span>
+      <button class="btn-ghost" id="signout-btn">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <h1 class="page-title">My Settings</h1>
+
+  <!-- Account info -->
+  <div class="card settings-section">
+    <h2 style="font-size:1rem;margin-bottom:1rem">Account</h2>
+    <dl class="account-grid">
+      <dt class="account-label">Name</dt>
+      <dd class="account-value" id="account-name">—</dd>
+      <dt class="account-label">Email</dt>
+      <dd class="account-value" id="account-email">—</dd>
+      <dt class="account-label">Role</dt>
+      <dd class="account-value" id="account-role">—</dd>
+    </dl>
+  </div>
+
+  <!-- Display theme -->
+  <div class="card settings-section">
+    <fieldset class="settings-fieldset">
+      <legend>Display Theme</legend>
+      <p class="settings-hint">
+        Choose how the site looks. Your preference is saved in this browser and applied on every page.
+      </p>
+      <div class="radio-group">
+
+        <label class="radio-option" for="theme-light">
+          <input type="radio" name="theme" id="theme-light" value="light">
+          <span class="radio-details">
+            <span class="radio-title">☀ Light Mode</span>
+            <span class="radio-desc">Light background with dark text — good for bright environments</span>
+          </span>
+        </label>
+
+        <label class="radio-option" for="theme-dark">
+          <input type="radio" name="theme" id="theme-dark" value="dark">
+          <span class="radio-details">
+            <span class="radio-title">☾ Dark Mode</span>
+            <span class="radio-desc">Dark background with light text — easier on the eyes at night</span>
+          </span>
+        </label>
+
+      </div>
+    </fieldset>
+  </div>
+</main>
+
+<script src="/js/common.js"></script>
+<script src="/js/settings.js"></script>
+</body>
+</html>

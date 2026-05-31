@@ -89,6 +89,9 @@ app.get('/', isAuthenticated, (req, res) =>
 app.get('/leaderboard', isAuthenticated, (req, res) =>
   res.sendFile(path.join(__dirname, '../public/leaderboard.html')));
 
+app.get('/settings', isAuthenticated, (req, res) =>
+  res.sendFile(path.join(__dirname, '../public/settings.html')));
+
 app.get('/admin', isAuthenticated, (req, res) => {
   if (req.user.role !== 'admin') return res.redirect('/');
   res.sendFile(path.join(__dirname, '../public/admin.html'));

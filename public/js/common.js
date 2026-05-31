@@ -1,7 +1,7 @@
 /* common.js — theme management and shared utilities
  * Loaded on every page before the page-specific script.
- * The tiny inline <script> in <head> already set data-theme to prevent flash;
- * this file handles the toggle button and pool-name hydration.
+ * The tiny inline <script> in <head> sets data-theme from localStorage to prevent flash.
+ * Theme selection lives on /settings; this file provides the shared helpers.
  */
 
 function toggleTheme() {
@@ -36,10 +36,4 @@ async function loadPublicPoolName() {
   } catch (_) {}
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('theme-toggle');
-  if (btn) {
-    btn.addEventListener('click', toggleTheme);
-    syncThemeButton();
-  }
-});
+// syncThemeButton is kept for any future use but no longer auto-wired globally.
