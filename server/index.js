@@ -60,8 +60,14 @@ app.use('/api/scores', isAuthenticated, scoresRoutes);
 app.use('/api/standings', isAuthenticated, standingsRoutes);
 app.use('/api/admin', adminRoutes); // adminOnly applied inside the router
 
+// Public — pool name needed on login/access-denied pages
+app.get('/api/pool', (req, res) => {
+  res.json(dataStore.getConfig());
+});
+
 app.get('/api/config', isAuthenticated, (req, res) => {
-  res.json({ weekNumber: dataStore.getCurrentWeekNumber(), user: req.user });
+  const { poolName } = dataStore.getConfig();
+  res.json({ weekNumber: dataStore.getCurrentWeekNumber(), user: req.user, poolName });
 });
 
 app.get('/api/weeks/:weekNumber', isAuthenticated, (req, res) => {

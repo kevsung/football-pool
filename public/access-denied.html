@@ -1,22 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Access Denied — TechBandits Pool</title>
+  <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <main class="login-page">
-    <div class="login-card">
-      <div class="login-logo">🚫</div>
-      <h1 class="login-title">Access Denied</h1>
-      <p class="login-sub" style="margin-bottom:1.5rem;">
-        Your Google account isn't linked to a valid invite.<br>
-        Make sure you opened the invite link before signing in, or contact the commissioner.
-      </p>
-      <a href="/login" class="btn btn-secondary" style="display:inline-flex;justify-content:center;">Back to Login</a>
-    </div>
-  </main>
+
+<div class="login-header">
+  <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
+</div>
+
+<main class="login-page">
+  <div class="login-card">
+    <div class="login-logo" aria-hidden="true">🚫</div>
+    <h1 class="login-title">Access Denied</h1>
+    <p class="login-sub" style="margin-bottom:1.5rem;">
+      Your Google account isn't linked to a valid invite.<br>
+      Make sure you opened the invite link before signing in, or contact the commissioner.
+    </p>
+    <a href="/login" class="btn btn-secondary" style="display:inline-flex;justify-content:center;">Back to Login</a>
+  </div>
+</main>
+
+<script src="/js/common.js"></script>
 </body>
 </html>

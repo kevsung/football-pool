@@ -1,24 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pick'em — TechBandits Pool</title>
+  <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
 <header class="site-header">
   <div class="header-inner">
-    <a href="/" class="site-logo">🏈 TechBandits</a>
-    <nav class="site-nav">
-      <a href="/" class="active">Picks</a>
+    <a href="/" class="site-logo">🏈 <span class="pool-name">TechBandits Pool</span></a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/" class="active" aria-current="page">Picks</a>
       <a href="/leaderboard">Standings</a>
-      <span id="admin-link-wrap" style="display:none"><a href="/admin">Admin</a></span>
+      <a href="/admin" id="admin-link" style="display:none">Admin</a>
     </nav>
-    <div class="header-user">
+    <div class="header-actions">
       <span class="user-name" id="user-name"></span>
-      <button class="btn-link" id="signout-btn">Sign out</button>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
+      <button class="btn-ghost" id="signout-btn">Sign out</button>
     </div>
   </div>
 </header>
@@ -47,7 +52,7 @@
       🔒 Picks are locked for this week.
     </div>
 
-    <div class="pick-counter" id="pick-counter">
+    <div class="pick-counter" id="pick-counter" aria-live="polite">
       <div class="counter-item">
         <span class="counter-label">Picks</span>
         <span class="counter-value incomplete" id="cnt-picks">0 / 15</span>
@@ -67,17 +72,18 @@
         Tiebreaker: Predict the combined final score of the <strong id="tb-game-label">MNF game</strong>
         <span id="tb-game-teams"></span>
       </label>
-      <input type="number" id="tiebreaker-input" min="0" max="200" placeholder="e.g. 47">
+      <input type="number" id="tiebreaker-input" min="0" max="200" placeholder="e.g. 47" aria-label="Tiebreaker predicted combined score">
     </div>
 
-    <div class="games-grid" id="games-grid"></div>
+    <div class="games-grid" id="games-grid" role="list"></div>
 
     <div class="submit-row">
-      <button class="btn btn-primary btn-submit" id="submit-btn" disabled>Submit Picks</button>
+      <button class="btn btn-primary btn-submit" id="submit-btn" disabled aria-disabled="true">Submit Picks</button>
     </div>
   </div>
 </main>
 
+<script src="/js/common.js"></script>
 <script src="/js/picks.js"></script>
 </body>
 </html>

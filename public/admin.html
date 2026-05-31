@@ -1,24 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — TechBandits Pool</title>
+  <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
 <header class="site-header">
   <div class="header-inner">
-    <a href="/" class="site-logo">🏈 TechBandits</a>
-    <nav class="site-nav">
+    <a href="/" class="site-logo">🏈 <span class="pool-name">TechBandits Pool</span></a>
+    <nav class="site-nav" aria-label="Main navigation">
       <a href="/">Picks</a>
       <a href="/leaderboard">Standings</a>
-      <a href="/admin" class="active">Admin</a>
+      <a href="/admin" class="active" aria-current="page">Admin</a>
     </nav>
-    <div class="header-user">
+    <div class="header-actions">
       <span class="user-name" id="user-name"></span>
-      <button class="btn-link" id="signout-btn">Sign out</button>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
+      <button class="btn-ghost" id="signout-btn">Sign out</button>
     </div>
   </div>
 </header>
@@ -26,20 +31,20 @@
 <main class="page">
   <h1 class="page-title">Admin Dashboard</h1>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="picksheet">Picksheet Builder</button>
-    <button class="tab-btn" data-tab="invites">Invites</button>
-    <button class="tab-btn" data-tab="users">Users</button>
-    <button class="tab-btn" data-tab="settings">Settings</button>
+  <div class="tabs" role="tablist" aria-label="Admin sections">
+    <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="tab-picksheet" data-tab="picksheet">Picksheet Builder</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-invites"   data-tab="invites">Invites</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-users"     data-tab="users">Users</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-settings"  data-tab="settings">Settings</button>
   </div>
 
   <!-- ── Picksheet Builder ─────────────────────────────────────────────── -->
-  <div id="tab-picksheet" class="tab-panel active">
+  <div id="tab-picksheet" class="tab-panel active" role="tabpanel">
     <div class="card" style="margin-bottom:1rem">
       <h2 style="font-size:1rem;margin-bottom:1rem">Fetch Available Games</h2>
       <div class="form-row">
         <div class="form-group" style="flex:0 0 auto">
-          <label class="form-label">Sport</label>
+          <label class="form-label" for="fetch-sport">Sport</label>
           <select class="form-select" id="fetch-sport" style="width:140px">
             <option value="all">All (NCAAF + NFL)</option>
             <option value="ncaaf">NCAAF only</option>
@@ -53,12 +58,12 @@
       </div>
     </div>
 
-    <div id="games-loading" class="loading" style="display:none">Fetching from Odds API…</div>
+    <div id="games-loading" class="loading" style="display:none" aria-live="polite">Fetching from Odds API…</div>
     <div id="games-fetch-result" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">
         <span id="games-count-label" style="font-size:0.875rem;color:var(--text-muted)"></span>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
-          <span id="selected-count" style="font-size:0.875rem;font-weight:600"></span>
+          <span id="selected-count" style="font-size:0.875rem;font-weight:600" aria-live="polite"></span>
           <button class="btn btn-sm btn-secondary" id="select-all-btn">Select All</button>
           <button class="btn btn-sm btn-secondary" id="clear-all-btn">Clear All</button>
         </div>
@@ -71,15 +76,15 @@
         <h2 style="font-size:1rem;margin-bottom:1rem">Publish Week</h2>
         <div class="form-row" style="margin-bottom:0.75rem">
           <div class="form-group">
-            <label class="form-label">Week Number</label>
+            <label class="form-label" for="pub-week">Week Number</label>
             <input type="number" class="form-input" id="pub-week" min="1" max="20" style="width:80px">
           </div>
           <div class="form-group">
-            <label class="form-label">Season Year</label>
+            <label class="form-label" for="pub-season">Season Year</label>
             <input type="number" class="form-input" id="pub-season" min="2024" max="2030" style="width:100px">
           </div>
           <div class="form-group" style="flex:1;min-width:200px">
-            <label class="form-label">Lock Time (pick deadline — Saturday noon ET)</label>
+            <label class="form-label" for="pub-lock">Lock Time (Saturday noon ET)</label>
             <input type="datetime-local" class="form-input" id="pub-lock">
           </div>
         </div>
@@ -87,28 +92,28 @@
           Tiebreaker game: <strong id="tiebreaker-label"></strong>
         </div>
         <button class="btn btn-primary" id="publish-btn">Publish Week</button>
-        <span id="publish-msg" style="font-size:0.875rem;margin-left:0.75rem"></span>
+        <span id="publish-msg" style="font-size:0.875rem;margin-left:0.75rem" aria-live="polite"></span>
       </div>
     </div>
   </div>
 
   <!-- ── Invites ───────────────────────────────────────────────────────── -->
-  <div id="tab-invites" class="tab-panel">
+  <div id="tab-invites" class="tab-panel" role="tabpanel">
     <div class="card" style="margin-bottom:1rem">
       <h2 style="font-size:1rem;margin-bottom:1rem">Generate Invite Link</h2>
       <div class="form-row">
         <div class="form-group" style="flex:1;max-width:340px">
-          <label class="form-label">Email address</label>
-          <input type="email" class="form-input" id="invite-email" placeholder="friend@example.com">
+          <label class="form-label" for="invite-email">Email address</label>
+          <input type="email" class="form-input" id="invite-email" placeholder="friend@example.com" autocomplete="email">
         </div>
         <div style="padding-bottom:0.1rem">
           <button class="btn btn-primary" id="generate-invite-btn">Generate Link</button>
         </div>
       </div>
-      <div id="new-invite-url" style="display:none;margin-top:0.75rem">
+      <div id="new-invite-url" style="display:none;margin-top:0.75rem" aria-live="polite">
         <div class="invite-url-box">
           <code id="invite-url-text"></code>
-          <button class="btn btn-sm btn-secondary" id="copy-invite-btn">Copy</button>
+          <button class="btn btn-sm btn-secondary" id="copy-invite-btn" aria-label="Copy invite link">Copy</button>
         </div>
       </div>
     </div>
@@ -119,11 +124,11 @@
         <table>
           <thead>
             <tr>
-              <th>Email</th>
-              <th>Created</th>
-              <th>Status</th>
-              <th>Used By</th>
-              <th></th>
+              <th scope="col">Email</th>
+              <th scope="col">Created</th>
+              <th scope="col">Status</th>
+              <th scope="col">Used By</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody id="invites-body"></tbody>
@@ -136,18 +141,18 @@
   </div>
 
   <!-- ── Users ─────────────────────────────────────────────────────────── -->
-  <div id="tab-users" class="tab-panel">
+  <div id="tab-users" class="tab-panel" role="tabpanel">
     <div class="card">
       <h2 style="font-size:1rem;margin-bottom:1rem">League Members</h2>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Joined</th>
-              <th></th>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Role</th>
+              <th scope="col">Joined</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody id="users-body"></tbody>
@@ -160,29 +165,49 @@
   </div>
 
   <!-- ── Settings ──────────────────────────────────────────────────────── -->
-  <div id="tab-settings" class="tab-panel">
-    <div class="card" style="max-width:500px">
+  <div id="tab-settings" class="tab-panel" role="tabpanel">
+
+    <div class="card" style="max-width:500px;margin-bottom:1rem">
+      <h2 style="font-size:1rem;margin-bottom:0.5rem">Pool Name</h2>
+      <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">
+        Updates the name displayed in the site header across all pages.
+      </p>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label" for="pool-name-input">Pool Name</label>
+          <input type="text" class="form-input" id="pool-name-input"
+            placeholder="e.g. TechBandits Pool" maxlength="50" autocomplete="off">
+        </div>
+        <div style="padding-bottom:0.1rem">
+          <button class="btn btn-primary" id="save-pool-name-btn">Save</button>
+        </div>
+      </div>
+      <span id="pool-name-msg" style="font-size:0.875rem;margin-top:0.5rem;display:block" aria-live="polite"></span>
+    </div>
+
+    <div class="card" style="max-width:500px;margin-bottom:1rem">
       <h2 style="font-size:1rem;margin-bottom:0.5rem">Manual Lock Override</h2>
       <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">
         Force lock or unlock the current week's picksheet, overriding the automatic schedule.
       </p>
       <div style="display:flex;align-items:center;gap:1rem">
         <button class="btn btn-secondary" id="lock-toggle-btn">Loading…</button>
-        <span id="lock-status" style="font-size:0.875rem;color:var(--text-muted)"></span>
+        <span id="lock-status" style="font-size:0.875rem;color:var(--text-muted)" aria-live="polite"></span>
       </div>
     </div>
 
-    <div class="card" style="max-width:500px;margin-top:1rem">
+    <div class="card" style="max-width:500px">
       <h2 style="font-size:1rem;margin-bottom:0.5rem">Force Score Poll</h2>
       <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">
         Immediately poll The Odds API for updated scores instead of waiting for the next 10-minute cycle.
       </p>
       <button class="btn btn-secondary" id="poll-now-btn">Poll Now</button>
-      <span id="poll-msg" style="font-size:0.875rem;margin-left:0.75rem"></span>
+      <span id="poll-msg" style="font-size:0.875rem;margin-left:0.75rem" aria-live="polite"></span>
     </div>
   </div>
 </main>
 
+<script src="/js/common.js"></script>
 <script src="/js/admin.js"></script>
 </body>
 </html>

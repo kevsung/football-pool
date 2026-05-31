@@ -6,6 +6,22 @@ const { adminOnly } = require('../middleware/adminOnly');
 const router = express.Router();
 router.use(adminOnly);
 
+// ── Pool config ───────────────────────────────────────────────────────────────
+
+router.get('/config', (req, res) => {
+  res.json(dataStore.getConfig());
+});
+
+router.put('/config', (req, res) => {
+  const { poolName } = req.body;
+  if (!poolName || typeof poolName !== 'string' || !poolName.trim()) {
+    return res.status(400).json({ error: 'poolName is required' });
+  }
+  const config = { poolName: poolName.trim() };
+  dataStore.saveConfig(config);
+  res.json(config);
+});
+
 // ── Weeks ─────────────────────────────────────────────────────────────────────
 
 router.get('/weeks', (req, res) => {

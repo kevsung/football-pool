@@ -31,6 +31,16 @@ function ensureDataFiles() {
   if (!fs.existsSync(usersFile)) writeJSON(usersFile, []);
   const invitesFile = path.join(DATA_DIR, 'invites.json');
   if (!fs.existsSync(invitesFile)) writeJSON(invitesFile, []);
+  const configFile = path.join(DATA_DIR, 'config.json');
+  if (!fs.existsSync(configFile)) writeJSON(configFile, { poolName: 'Football Pool' });
+}
+
+function getConfig() {
+  return readJSON(path.join(DATA_DIR, 'config.json')) || { poolName: 'Football Pool' };
+}
+
+function saveConfig(config) {
+  writeJSON(path.join(DATA_DIR, 'config.json'), config);
 }
 
 function getUsers() {
@@ -97,4 +107,5 @@ module.exports = {
   getWeek, saveWeek,
   getWeekPicks, saveWeekPicks,
   getAllWeekNumbers, getCurrentWeekNumber,
+  getConfig, saveConfig,
 };

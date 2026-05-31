@@ -30,12 +30,13 @@ async function init() {
     currentUser = config.user;
     currentWeekNumber = config.weekNumber;
     document.getElementById('user-name').textContent = config.user.name;
+    applyPoolName(config.poolName);
 
     document.getElementById('pub-season').value = new Date().getFullYear();
     document.getElementById('pub-week').value = currentWeekNumber ? currentWeekNumber + 1 : 1;
     document.getElementById('pub-lock').value = nextSaturdayNoon();
 
-    await Promise.all([loadUsers(), loadInvites(), loadLockStatus()]);
+    await Promise.all([loadUsers(), loadInvites(), loadLockStatus(), loadPoolConfig()]);
   } catch (err) {
     alert(`Init error: ${err.message}`);
   }
@@ -45,9 +46,13 @@ async function init() {
 
 function showTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn[role="tab"]').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
   document.getElementById(`tab-${name}`).classList.add('active');
   btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
 }
 
 // ── Picksheet builder ──────────────────────────────────────────────────────
@@ -370,6 +375,37 @@ async function removeUser(userId, name) {
   }
 }
 
+// ── Pool config ────────────────────────────────────────────────────────────
+
+async function loadPoolConfig() {
+  try {
+    const config = await api('/api/admin/config');
+    if (!config) return;
+    document.getElementById('pool-name-input').value = config.poolName || '';
+  } catch (_) {}
+}
+
+async function savePoolName() {
+  const poolName = document.getElementById('pool-name-input').value.trim();
+  if (!poolName) { alert('Pool name cannot be empty.'); return; }
+
+  const msg = document.getElementById('pool-name-msg');
+  try {
+    const updated = await api('/api/admin/config', {
+      method: 'PUT',
+      body: JSON.stringify({ poolName }),
+    });
+    if (!updated) return;
+    msg.textContent = '✅ Saved!';
+    msg.style.color = 'var(--accent)';
+    applyPoolName(updated.poolName);
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  } catch (err) {
+    msg.textContent = `Error: ${err.message}`;
+    msg.style.color = 'var(--danger)';
+  }
+}
+
 // ── Settings ───────────────────────────────────────────────────────────────
 
 async function loadLockStatus() {
@@ -476,7 +512,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn.dataset.action === 'remove-user') removeUser(btn.dataset.userId, btn.dataset.name);
   });
 
-  // Settings
+  // Settings — pool name
+  document.getElementById('save-pool-name-btn').addEventListener('click', savePoolName);
+  document.getElementById('pool-name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') savePoolName();
+  });
+
+  // Settings — lock & poll
   document.getElementById('lock-toggle-btn').addEventListener('click', toggleManualLock);
   document.getElementById('poll-now-btn').addEventListener('click', triggerPoll);
 

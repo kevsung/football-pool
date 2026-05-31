@@ -1,40 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Standings — TechBandits Pool</title>
+  <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
 <header class="site-header">
   <div class="header-inner">
-    <a href="/" class="site-logo">🏈 TechBandits</a>
-    <nav class="site-nav">
+    <a href="/" class="site-logo">🏈 <span class="pool-name">TechBandits Pool</span></a>
+    <nav class="site-nav" aria-label="Main navigation">
       <a href="/">Picks</a>
-      <a href="/leaderboard" class="active">Standings</a>
-      <span id="admin-link-wrap" style="display:none"><a href="/admin">Admin</a></span>
+      <a href="/leaderboard" class="active" aria-current="page">Standings</a>
+      <a href="/admin" id="admin-link" style="display:none">Admin</a>
     </nav>
-    <div class="header-user">
+    <div class="header-actions">
       <span class="user-name" id="user-name"></span>
-      <button class="btn-link" id="signout-btn">Sign out</button>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
+      <button class="btn-ghost" id="signout-btn">Sign out</button>
     </div>
   </div>
 </header>
 
 <main class="page">
   <div class="standings-controls">
-    <div class="tabs" style="border:none;margin:0">
-      <button class="tab-btn active" id="btn-weekly" data-view="weekly">Weekly</button>
-      <button class="tab-btn" id="btn-season" data-view="season">Season</button>
+    <div class="tabs" role="tablist" aria-label="Standings view" style="border:none;margin:0">
+      <button class="tab-btn active" id="btn-weekly" role="tab" aria-selected="true"
+        aria-controls="standings-wrap" data-view="weekly">Weekly</button>
+      <button class="tab-btn" id="btn-season" role="tab" aria-selected="false"
+        aria-controls="standings-wrap" data-view="season">Season</button>
     </div>
 
-    <select class="form-select week-selector" id="week-select" style="display:none">
+    <select class="form-select week-selector" id="week-select" aria-label="Select week" style="display:none">
       <option value="">Loading…</option>
     </select>
 
-    <span class="last-updated" id="last-updated"></span>
+    <span class="last-updated" id="last-updated" aria-live="polite"></span>
   </div>
 
   <div id="loading" class="loading">Loading…</div>
@@ -44,17 +51,17 @@
     <p>Check back once games are complete.</p>
   </div>
 
-  <div id="standings-wrap" style="display:none">
+  <div id="standings-wrap" style="display:none" role="tabpanel">
     <div class="card">
       <div class="table-wrap">
         <table id="standings-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th style="text-align:right">Pts</th>
-              <th style="text-align:right">Key W</th>
-              <th style="text-align:right" id="tb-col-header">TB Diff</th>
+              <th scope="col">#</th>
+              <th scope="col">Name</th>
+              <th scope="col" style="text-align:right">Pts</th>
+              <th scope="col" style="text-align:right">Key W</th>
+              <th scope="col" style="text-align:right" id="tb-col-header">TB Diff</th>
             </tr>
           </thead>
           <tbody id="standings-body"></tbody>
@@ -64,6 +71,7 @@
   </div>
 </main>
 
+<script src="/js/common.js"></script>
 <script src="/js/leaderboard.js"></script>
 </body>
 </html>

@@ -29,8 +29,9 @@ async function init() {
 
     state.currentUser = config.user;
     document.getElementById('user-name').textContent = config.user.name;
+    applyPoolName(config.poolName);
     if (config.user.role === 'admin') {
-      document.getElementById('admin-link-wrap').style.display = '';
+      document.getElementById('admin-link').style.display = '';
     }
 
     state.weekNumber = config.weekNumber;
