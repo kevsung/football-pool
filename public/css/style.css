@@ -820,11 +820,7 @@ thead th.ap-name-col { z-index: 3; }
   font-size: 0.875rem;
 }
 
-/* Sticky header — sits just below the 56px nav bar */
 .picks-table thead th {
-  position: sticky;
-  top: 56px;
-  z-index: 4;
   text-align: left;
   padding: 0.5rem 0.75rem;
   background: var(--bg-hover);
