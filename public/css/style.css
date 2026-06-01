@@ -612,6 +612,124 @@ tr:hover td { background: var(--bg-hover); }
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
 .empty-state p { margin-top: 0.5rem; font-size: 0.875rem; }
 
+/* ── Locked picks view ────────────────────────────────────────────────── */
+.tb-prediction {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+.tb-prediction .tb-label { color: var(--text-muted); }
+.tb-prediction .tb-score { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+.tb-prediction .tb-game  { color: var(--text-muted); }
+.tb-prediction .tb-actual { font-weight: 600; color: var(--accent); }
+
+.locked-picks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.6rem;
+}
+
+.pick-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.75rem;
+  align-items: start;
+}
+.pi-teams     { font-weight: 600; font-size: 0.875rem; grid-column: 1; }
+.pi-meta      { font-size: 0.75rem; color: var(--text-muted); grid-column: 1; display: flex; gap: 0.6rem; }
+.pi-league    { font-weight: 600; color: var(--info); }
+.pi-pick      { grid-column: 1; margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem; }
+.pi-key-star  { color: var(--warning); font-size: 0.75rem; font-weight: 700; }
+.pi-team-name { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+.pi-right     { grid-column: 2; grid-row: 1 / 4; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 0.35rem; }
+.pi-score     { font-size: 0.85rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
+.pi-status    { font-size: 0.7rem; font-weight: 700; padding: 0.1em 0.45em; border-radius: 3px; }
+.pi-status.live   { color: var(--warning); background: rgba(154,103,0,.1); }
+.pi-status.final  { color: var(--text-muted); }
+[data-theme="dark"] .pi-status.live { background: rgba(210,153,34,.15); }
+
+/* ── All Picks table ──────────────────────────────────────────────────── */
+.all-picks-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.all-picks-table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.all-picks-table th,
+.all-picks-table td {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+.all-picks-table thead th {
+  background: var(--bg-card);
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Sticky name column */
+.ap-name-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-card);
+  text-align: left !important;
+  min-width: 140px;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 2px solid var(--border) !important;
+}
+/* Fully opaque on hover — game columns must not bleed through */
+tr:hover .ap-name-col { background: var(--bg-hover); }
+/* Self-row: use opaque computed colour so game cols don't show through the sticky cell */
+.ap-self td.ap-name-col { background: #f1f6f2 !important; }
+[data-theme="dark"] .ap-self td.ap-name-col { background: #182324 !important; }
+/* Header corner: sit above game-column headers when both sticky */
+thead th.ap-name-col { z-index: 3; }
+
+/* Game column header */
+.ap-game-header { text-align: center; min-width: 72px; }
+.ap-matchup     { font-size: 0.72rem; font-weight: 700; display: block; }
+.ap-spread-line { font-size: 0.68rem; color: var(--text-muted); display: block; }
+.ap-score-live  { font-size: 0.68rem; font-weight: 600; display: block; color: var(--warning); }
+.ap-score-final { font-size: 0.68rem; display: block; color: var(--text-muted); }
+.ap-score-sched { font-size: 0.65rem; display: block; color: var(--text-muted); }
+
+/* Pick cells */
+.ap-pick-cell {
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.4rem;
+}
+.ap-empty { color: var(--border); }
+.ap-key   { font-weight: 800; color: var(--warning); position: relative; }
+.ap-key::after { content: '★'; font-size: 0.6rem; vertical-align: super; margin-left: 1px; }
+.ap-win   { background: rgba(26,116,49,.1); }
+.ap-loss  { background: rgba(207,34,46,.07); }
+.ap-push  { background: rgba(5,80,174,.07); }
+[data-theme="dark"] .ap-win  { background: rgba(63,185,80,.1); }
+[data-theme="dark"] .ap-loss { background: rgba(248,81,73,.08); }
+[data-theme="dark"] .ap-push { background: rgba(88,166,255,.08); }
+
+/* Self-row highlight */
+.ap-self td { background: rgba(26,116,49,.04) !important; }
+[data-theme="dark"] .ap-self td { background: rgba(63,185,80,.05) !important; }
+
 /* ── Settings page ────────────────────────────────────────────────────── */
 .settings-section { max-width: 520px; }
 .settings-section + .settings-section { margin-top: 1rem; }
@@ -684,6 +802,104 @@ tr:hover td { background: var(--bg-hover); }
 }
 .account-label { color: var(--text-muted); font-weight: 500; }
 .account-value { color: var(--text); word-break: break-all; }
+
+/* ── All Picks extra columns (TB pred, TB diff, Total Pts) ───────────── */
+.ap-extra-col {
+  background: rgba(5,80,174,.04);
+  border-left: 2px solid var(--border) !important;
+}
+[data-theme="dark"] .ap-extra-col { background: rgba(88,166,255,.04); }
+.ap-pts-col { font-weight: 700; color: var(--text); }
+
+/* ── My Picks page — day-grouped table ────────────────────────────────── */
+.picks-day-header {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 1.5rem 0 0.4rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--border);
+}
+.picks-day-header:first-child { margin-top: 0; }
+
+.picks-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 0.25rem; }
+
+.picks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.picks-table th {
+  text-align: left;
+  padding: 0.45rem 0.75rem;
+  background: var(--bg-hover);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.picks-th-key { text-align: center; width: 80px; }
+.picks-table td { border-bottom: 1px solid var(--border); vertical-align: middle; }
+.picks-table tr:last-child td { border-bottom: none; }
+
+.picks-row-locked { opacity: 0.75; }
+.picks-row-warning { background: rgba(154,103,0,.04); }
+
+.picks-td-team { padding: 0.45rem 0.5rem; }
+.picks-td-key  { text-align: center; padding: 0.45rem 0.5rem; }
+.picks-td-result { padding: 0.45rem 0.5rem; white-space: nowrap; display: flex; align-items: center; gap: 0.4rem; }
+
+/* Team buttons */
+.picks-team-btn {
+  display: inline-block;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  text-align: left;
+  white-space: nowrap;
+}
+.picks-team-btn:hover:not(:disabled) { border-color: var(--text-muted); background: var(--bg-hover); }
+.picks-team-btn.picked {
+  border-color: var(--accent);
+  background: rgba(26,116,49,.08);
+  font-weight: 700;
+}
+[data-theme="dark"] .picks-team-btn.picked { background: rgba(63,185,80,.1); }
+.picks-team-btn:disabled { cursor: default; }
+.picks-team-home { font-weight: 600; }
+
+/* Read-only variant */
+.picks-team-readonly { cursor: default; }
+.picks-team-readonly:hover { border-color: var(--border); background: var(--bg-card); }
+.picks-team-readonly.picked { border-color: var(--accent); background: rgba(26,116,49,.08); }
+[data-theme="dark"] .picks-team-readonly.picked { background: rgba(63,185,80,.1); }
+
+/* Lock note inline */
+.picks-lock-note { font-size: 0.7rem; margin-left: 0.3rem; color: var(--text-muted); }
+.picks-lock-note.warn { color: var(--warning); }
+
+/* Key pick checkbox */
+.picks-key-check { width: 16px; height: 16px; accent-color: var(--warning); cursor: pointer; }
+.picks-key-check:disabled { cursor: default; opacity: 0.4; }
+
+/* Home team legend */
+.picks-home-legend {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+  font-style: italic;
+}
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 600px) {

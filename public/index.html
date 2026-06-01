@@ -16,7 +16,7 @@
   <div class="header-inner">
     <a href="/" class="site-logo">🏈 <span class="pool-name">TechBandits Pool</span></a>
     <nav class="site-nav" aria-label="Main navigation">
-      <a href="/" class="active" aria-current="page">Picks</a>
+      <a href="/" class="active" aria-current="page">My Picks</a>
       <a href="/leaderboard">Standings</a>
       <a href="/settings">Settings</a>
       <a href="/admin" id="admin-link" style="display:none">Admin</a>
@@ -30,6 +30,7 @@
 
 <main class="page">
   <div id="loading" class="loading">Loading…</div>
+  <div id="locked-picks-view" style="display:none"></div>
   <div id="no-week" class="empty-state" style="display:none">
     <div style="font-size:2rem">🏈</div>
     <h2>No picksheet yet</h2>
@@ -40,7 +41,7 @@
     <div class="week-header">
       <h1 id="week-title">Week 1 Picks</h1>
       <div class="lock-countdown" id="countdown-wrap">
-        Lock: <span class="time" id="countdown">—</span>
+        Pick Status: <span class="time" id="countdown">—</span>
       </div>
     </div>
 
@@ -67,7 +68,7 @@
       </div>
     </div>
 
-    <div class="tiebreaker-section">
+    <div class="tiebreaker-section" id="tiebreaker-section">
       <label for="tiebreaker-input">
         Tiebreaker: Predict the combined final score of the <strong id="tb-game-label">MNF game</strong>
         <span id="tb-game-teams"></span>
@@ -75,9 +76,9 @@
       <input type="number" id="tiebreaker-input" min="0" max="200" placeholder="e.g. 47" aria-label="Tiebreaker predicted combined score">
     </div>
 
-    <div class="games-grid" id="games-grid" role="list"></div>
+    <div id="games-table-wrap"></div>
 
-    <div class="submit-row">
+    <div class="submit-row" id="submit-row">
       <button class="btn btn-primary btn-submit" id="submit-btn" disabled aria-disabled="true">Submit Picks</button>
     </div>
   </div>

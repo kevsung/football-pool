@@ -22,7 +22,6 @@ async function init() {
   if (config.user.role === 'admin') {
     document.getElementById('admin-link').style.display = '';
   }
-
   // Reflect the currently active theme in the radio buttons
   const active = document.documentElement.getAttribute('data-theme') || 'light';
   const radio = document.getElementById(`theme-${active}`);

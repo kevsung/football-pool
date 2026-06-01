@@ -31,7 +31,6 @@ async function init() {
     currentWeekNumber = config.weekNumber;
     document.getElementById('user-name').textContent = config.user.name;
     applyPoolName(config.poolName);
-
     document.getElementById('pub-season').value = new Date().getFullYear();
     document.getElementById('pub-week').value = currentWeekNumber ? currentWeekNumber + 1 : 1;
     document.getElementById('pub-lock').value = nextSaturdayNoon();

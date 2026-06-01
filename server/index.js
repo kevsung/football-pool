@@ -61,6 +61,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'change-me-in-production',
   resave: false,
   saveUninitialized: false,
+  rolling: true,
   cookie: {
     secure: isProd,         // requires HTTPS; safe because trust proxy is set
     httpOnly: true,
@@ -88,7 +89,13 @@ app.get('/api/pool', (req, res) => {
 
 app.get('/api/config', isAuthenticated, (req, res) => {
   const { poolName } = dataStore.getConfig();
-  res.json({ weekNumber: dataStore.getCurrentWeekNumber(), user: req.user, poolName });
+  const weekNumber = dataStore.getCurrentWeekNumber();
+  let weekLocked = false;
+  if (weekNumber) {
+    const week = dataStore.getWeek(weekNumber);
+    if (week) weekLocked = !!(week.manualLock || (week.lockTime && new Date(week.lockTime) <= new Date()));
+  }
+  res.json({ weekNumber, user: req.user, poolName, weekLocked });
 });
 
 app.get('/api/weeks/:weekNumber', isAuthenticated, (req, res) => {
@@ -112,6 +119,9 @@ app.get('/leaderboard', isAuthenticated, (req, res) =>
 
 app.get('/settings', isAuthenticated, (req, res) =>
   res.sendFile(path.join(__dirname, '../public/settings.html')));
+
+app.get('/all-picks', isAuthenticated, (req, res) =>
+  res.redirect('/leaderboard'));
 
 app.get('/admin', isAuthenticated, (req, res) => {
   if (req.user.role !== 'admin') return res.redirect('/');

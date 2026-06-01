@@ -63,6 +63,31 @@ router.post('/week/:weekNumber', (req, res) => {
   res.status(201).json({ submitted: true, ...record });
 });
 
+// GET /api/picks/week/:n/public — all picks, visible to every authenticated user
+// once the pick deadline has passed (enforced server-side).
+router.get('/week/:weekNumber/public', (req, res) => {
+  const weekNumber = parseInt(req.params.weekNumber);
+  const week = dataStore.getWeek(weekNumber);
+  if (!week) return res.status(404).json({ error: 'Week not found' });
+
+  const locked = week.manualLock || (week.lockTime && new Date(week.lockTime) <= new Date());
+  if (!locked) return res.status(403).json({ error: 'Picks are not yet locked' });
+
+  const allPicks = dataStore.getWeekPicks(weekNumber);
+  const users = dataStore.getUsers();
+  const picksWithNames = allPicks.map(p => ({
+    ...p,
+    userName: users.find(u => u.id === p.userId)?.name || 'Unknown',
+  }));
+
+  res.json({
+    weekNumber,
+    tiebreakerGameId: week.tiebreakerGameId,
+    games: week.games,
+    picks: picksWithNames,
+  });
+});
+
 // GET /api/picks/week/:n/all — admin: every user's picks
 router.get('/week/:weekNumber/all', adminOnly, (req, res) => {
   const weekNumber = parseInt(req.params.weekNumber);
