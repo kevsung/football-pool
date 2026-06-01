@@ -435,14 +435,20 @@ function showLockedPicksView() {
 // ── Interaction ────────────────────────────────────────────────────────────
 
 function selectTeam(gameId, team) {
+  const prevCount = Object.keys(state.selections).length;
   if (state.selections[gameId] === team) {
     delete state.selections[gameId];
     if (state.keyPickId === gameId) state.keyPickId = null;
   } else {
     state.selections[gameId] = team;
   }
+  const newCount = Object.keys(state.selections).length;
   updateCounters();
-  refreshRow(gameId);
+  if (prevCount === 15 || newCount === 15) {
+    renderGamesTable();
+  } else {
+    refreshRow(gameId);
+  }
 }
 
 function toggleKeyPick(gameId, checked) {
@@ -469,7 +475,8 @@ function wireTiebreakerInput() {
   const { week } = state;
   const tbGame = week.games.find(g => g.id === week.tiebreakerGameId);
   if (tbGame) {
-    document.getElementById('tb-game-label').textContent = `${tbGame.awayTeam} @ ${tbGame.homeTeam}`;
+    const ouSuffix = tbGame.overUnder != null ? ` (O/U: ${tbGame.overUnder})` : '';
+    document.getElementById('tb-game-label').textContent = `${tbGame.awayTeam} @ ${tbGame.homeTeam}${ouSuffix}`;
   }
 
   const input = document.getElementById('tiebreaker-input');
