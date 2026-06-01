@@ -5,8 +5,19 @@
  * Run:  node data/seed.js   (from project root)
  *  or:  npm run seed
  *
- * Safe to re-run: overwrites all data files cleanly every time.
- * All random values are seeded deterministically via LCG.
+ * What this script writes
+ * ───────────────────────
+ *  data/seed-users.json  — 26 fake users (gitignored; never touches users.json)
+ *  data/weeks/week*.json — week definitions
+ *  data/picks/week*.json — pick submissions for every fake user
+ *
+ * What this script NEVER touches
+ * ───────────────────────────────
+ *  data/users.json   — real user accounts (managed by the app at runtime)
+ *  data/invites.json — real invite tokens
+ *
+ * The app merges seed-users.json into the user list automatically when
+ * NODE_ENV=development (see server/utils/dataStore.js → getEffectiveUsers).
  *
  * Week coverage
  * ─────────────
@@ -14,7 +25,7 @@
  *  Week 2 (Sep 13) — 30 final                                (lock: past)
  *  Week 3 (Sep 20) — 25 final, 5 scheduled                   (lock: past)
  *  Week 4 (Sep 27) — 8 final, 7 in_progress, 15 scheduled   (lock: past)
- *  All 26 users have submitted picks for all 4 weeks.
+ *  All 26 fake users have submitted picks for all 4 weeks.
  */
 
 'use strict';
@@ -73,11 +84,12 @@ const NAMES = [
 ];
 
 const users = [
+  // Fake admin — no real credentials; allows testing admin features in dev
   {
-    id:       '5a74b1e5-8706-407b-9298-f6ba117e012d',
-    googleId: '107143992555119122003',
-    name:     'Kevin Sung',
-    email:    'kevsung@gmail.com',
+    id:       uuidv4(),
+    googleId: `fake-${uuidv4()}`,
+    name:     'Test Admin',
+    email:    'admin@example.com',
     role:     'admin',
     joinedAt: '2026-05-31T19:40:29.916Z',
   },
@@ -333,7 +345,7 @@ ensureDir(PICKS_DIR);
 
 console.log('\n🌱  Seeding football-pool data (4 weeks)...\n');
 
-write(path.join(DATA_DIR, 'users.json'), users);
+write(path.join(DATA_DIR, 'seed-users.json'), users);
 
 const allWeekPicks = [];
 for (let i = 0; i < WEEKS.length; i++) {
@@ -390,8 +402,13 @@ const finalCounts = WEEKS.map(w => ({
 console.log(`
 ✅  Seed complete.
 
-  Users  : ${users.length}  (1 admin + ${users.length - 1} members)
-  Weeks  : ${WEEKS.length}`);
+  seed-users.json : ${users.length} fake users  (1 fake admin + ${users.length - 1} members)
+  Weeks           : ${WEEKS.length}
+
+⚠️  data/users.json and data/invites.json were NOT modified.
+  Fake users are written to data/seed-users.json (gitignored).
+  Start the server with NODE_ENV=development to merge them in.
+`);
 
 finalCounts.forEach(({ w, final: f, live: l, sched: s }) =>
   console.log(`           Week ${w} — ${f} final, ${l} live, ${s} scheduled`));

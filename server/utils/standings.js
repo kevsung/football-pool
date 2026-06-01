@@ -21,7 +21,7 @@ function calculateWeeklyStandings(weekNumber) {
   if (!week) return [];
 
   const allPicks = dataStore.getWeekPicks(weekNumber);
-  const users = dataStore.getUsers();
+  const users = dataStore.getEffectiveUsers();
   const standings = [];
 
   for (const userPickSet of allPicks) {
@@ -55,7 +55,7 @@ function calculateWeeklyStandings(weekNumber) {
 
 function calculateSeasonStandings() {
   const weekNumbers = dataStore.getAllWeekNumbers();
-  const users = dataStore.getUsers();
+  const users = dataStore.getEffectiveUsers();
 
   const stats = {};
   for (const user of users) {

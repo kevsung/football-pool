@@ -74,7 +74,7 @@ router.get('/week/:weekNumber/public', (req, res) => {
   if (!locked) return res.status(403).json({ error: 'Picks are not yet locked' });
 
   const allPicks = dataStore.getWeekPicks(weekNumber);
-  const users = dataStore.getUsers();
+  const users = dataStore.getEffectiveUsers();
   const picksWithNames = allPicks.map(p => ({
     ...p,
     userName: users.find(u => u.id === p.userId)?.name || 'Unknown',
@@ -92,7 +92,7 @@ router.get('/week/:weekNumber/public', (req, res) => {
 router.get('/week/:weekNumber/all', adminOnly, (req, res) => {
   const weekNumber = parseInt(req.params.weekNumber);
   const allPicks = dataStore.getWeekPicks(weekNumber);
-  const users = dataStore.getUsers();
+  const users = dataStore.getEffectiveUsers();
   const withNames = allPicks.map(p => ({
     ...p,
     userName: users.find(u => u.id === p.userId)?.name || 'Unknown',

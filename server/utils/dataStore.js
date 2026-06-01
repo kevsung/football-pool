@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '../../data');
-const WEEKS_DIR = path.join(DATA_DIR, 'weeks');
-const PICKS_DIR = path.join(DATA_DIR, 'picks');
+const DATA_DIR      = path.join(__dirname, '../../data');
+const WEEKS_DIR     = path.join(DATA_DIR, 'weeks');
+const PICKS_DIR     = path.join(DATA_DIR, 'picks');
+const SEED_USERS_FILE = path.join(DATA_DIR, 'seed-users.json');
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -51,12 +52,27 @@ function saveUsers(users) {
   writeJSON(path.join(DATA_DIR, 'users.json'), users);
 }
 
+// Returns real users merged with seed users when NODE_ENV=development.
+// Use this for display and scoring (leaderboard, picks names).
+// Auth and user-management routes use getUsers() to avoid writing seed
+// users back into users.json.
+function getEffectiveUsers() {
+  const real = getUsers();
+  if (process.env.NODE_ENV !== 'development') return real;
+
+  const seed = readJSON(SEED_USERS_FILE) || [];
+  if (seed.length === 0) return real;
+
+  const realIds = new Set(real.map(u => u.id));
+  return [...real, ...seed.filter(u => !realIds.has(u.id))];
+}
+
 function getUserById(id) {
-  return getUsers().find(u => u.id === id) || null;
+  return getEffectiveUsers().find(u => u.id === id) || null;
 }
 
 function getUserByGoogleId(googleId) {
-  return getUsers().find(u => u.googleId === googleId) || null;
+  return getEffectiveUsers().find(u => u.googleId === googleId) || null;
 }
 
 function getInvites() {
@@ -102,7 +118,7 @@ function getCurrentWeekNumber() {
 
 module.exports = {
   ensureDataFiles,
-  getUsers, saveUsers, getUserById, getUserByGoogleId,
+  getUsers, saveUsers, getEffectiveUsers, getUserById, getUserByGoogleId,
   getInvites, saveInvites, getInviteByToken,
   getWeek, saveWeek,
   getWeekPicks, saveWeekPicks,

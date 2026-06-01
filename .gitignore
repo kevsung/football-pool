@@ -4,6 +4,9 @@ data/picks/
 data/sessions/
 data/config.json
 
+# Development-only seed users — never commit, never overwrite real users.json
+data/seed-users.json
+
 # Logs
 logs
 *.log
