@@ -12,10 +12,19 @@ function ensureDir(dir) {
 
 function readJSON(filePath) {
   try {
-    let raw = fs.readFileSync(filePath, 'utf8');
-    // Strip UTF-8 BOM (﻿) added by some Windows editors
-    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
-    const content = raw.trim();
+    const buf = fs.readFileSync(filePath); // read as Buffer to inspect BOM bytes first
+    let str;
+    if (buf.length >= 2 && buf[0] === 0xFF && buf[1] === 0xFE) {
+      // UTF-16 LE BOM (FF FE) — written by Notepad "Unicode" mode on Windows
+      str = buf.slice(2).toString('utf16le');
+    } else if (buf.length >= 3 && buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
+      // UTF-8 BOM (EF BB BF) — written by some Windows editors
+      str = buf.slice(3).toString('utf8');
+    } else {
+      // Plain UTF-8 / ASCII — the only encoding writeJSON ever produces
+      str = buf.toString('utf8');
+    }
+    const content = str.trim();
     return content ? JSON.parse(content) : null;
   } catch (err) {
     if (err.code === 'ENOENT') return null;
