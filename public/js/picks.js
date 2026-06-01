@@ -1,15 +1,15 @@
 /* ── picks.js — weekly pick'em page logic ──────────────────────────────── */
 
 let state = {
-  weekNumber:     null,
-  week:           null,
-  currentUser:    null,
-  submitted:      false,
-  submittedPicks: null,
-  selections:     {},      // gameId → pickedTeam
-  keyPickId:      null,
+  weekNumber:      null,
+  week:            null,
+  currentUser:     null,
+  submitted:       false,
+  submittedPicks:  null,
+  selections:      {},      // gameId → pickedTeam
+  keyPickId:       null,
   tiebreakerScore: null,
-  weekLocked:     false,
+  weekLocked:      false,
 };
 
 async function api(url, opts = {}) {
@@ -122,16 +122,13 @@ function groupGamesByDay(games) {
   const groups = new Map();
   for (const game of games) {
     const dt = new Date(game.commenceTime);
-    // key = YYYY-MM-DD in local time
-    const key = dt.toLocaleDateString('en-CA'); // ISO date in local tz
+    const key = dt.toLocaleDateString('en-CA'); // YYYY-MM-DD in local tz
     if (!groups.has(key)) groups.set(key, { date: dt, games: [] });
     groups.get(key).games.push(game);
   }
-  // Sort each day's games by commenceTime
   for (const group of groups.values()) {
     group.games.sort((a, b) => new Date(a.commenceTime) - new Date(b.commenceTime));
   }
-  // Return sorted by date
   return [...groups.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, v]) => v);
@@ -141,52 +138,61 @@ function formatDayHeader(date) {
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-// ── Open pick form — day-grouped table ─────────────────────────────────────
+// ── Spread label helpers ───────────────────────────────────────────────────
+
+function spreadLabel(game, team) {
+  if (game.spread == null) return '';
+  const side = game.favoredTeam === team ? game.spread : -game.spread;
+  return ` ${side > 0 ? '+' : ''}${side}`;
+}
+
+function recordStr(game, team) {
+  const rec = team === game.awayTeam ? game.awayRecord : game.homeRecord;
+  return rec ? ` (${rec})` : '';
+}
+
+// ── Open pick form — single table, day-divider rows ────────────────────────
 
 function renderGamesTable() {
   const wrap = document.getElementById('games-table-wrap');
   wrap.innerHTML = '';
   wrap.style.display = '';
 
-  const dayGroups = groupGamesByDay(state.week.games);
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'picks-table-wrap';
 
-  for (const group of dayGroups) {
-    // Day section header
-    const dayHeader = document.createElement('h2');
-    dayHeader.className = 'picks-day-header';
-    dayHeader.textContent = formatDayHeader(group.date);
-    wrap.appendChild(dayHeader);
+  const table = document.createElement('table');
+  table.className = 'picks-table';
 
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'picks-table-wrap';
+  const thead = document.createElement('thead');
+  thead.innerHTML = `
+    <tr>
+      <th class="picks-th-team">Away</th>
+      <th class="picks-th-team">Home</th>
+      <th class="picks-th-key">Key Pick</th>
+    </tr>
+  `;
+  table.appendChild(thead);
 
-    const table = document.createElement('table');
-    table.className = 'picks-table';
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>Away</th>
-          <th>Home</th>
-          <th class="picks-th-key">Key Pick</th>
-        </tr>
-      </thead>
-    `;
-    const tbody = document.createElement('tbody');
+  const tbody = document.createElement('tbody');
+
+  for (const group of groupGamesByDay(state.week.games)) {
+    const dayTr = document.createElement('tr');
+    dayTr.className = 'picks-day-row';
+    const dayTd = document.createElement('td');
+    dayTd.colSpan = 3;
+    dayTd.textContent = formatDayHeader(group.date);
+    dayTr.appendChild(dayTd);
+    tbody.appendChild(dayTr);
 
     for (const game of group.games) {
       tbody.appendChild(buildGameRow(game));
     }
-
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
-    wrap.appendChild(tableWrap);
   }
 
-  // Legend
-  const legend = document.createElement('p');
-  legend.className = 'picks-home-legend';
-  legend.textContent = 'Home team displayed in ALL CAPS';
-  wrap.appendChild(legend);
+  table.appendChild(tbody);
+  scrollWrap.appendChild(table);
+  wrap.appendChild(scrollWrap);
 }
 
 function buildGameRow(game) {
@@ -199,73 +205,72 @@ function buildGameRow(game) {
   const isKeyPick  = keyPickId === game.id;
   const isTb       = game.id === state.week.tiebreakerGameId;
 
-  const awaySide = game.spread != null
-    ? (game.favoredTeam === game.awayTeam ? game.spread : -game.spread)
-    : null;
-  const homeSide = game.spread != null
-    ? (game.favoredTeam === game.homeTeam ? game.spread : -game.spread)
-    : null;
-
-  const awayRecord = game.awayRecord ? ` (${game.awayRecord})` : '';
-  const homeRecord = game.homeRecord ? ` (${game.homeRecord})` : '';
-
-  const awaySpreadStr = awaySide != null ? ` ${awaySide > 0 ? '+' : ''}${awaySide}` : '';
-  const homeSpreadStr = homeSide != null ? ` ${homeSide > 0 ? '+' : ''}${homeSide}` : '';
-
-  const awayLabel = `${game.awayTeam}${awayRecord}${awaySpreadStr}`;
-  const homeLabel = `${game.homeTeam.toUpperCase()}${homeRecord}${homeSpreadStr}`;
-
+  const awayLabel = `${game.awayTeam}${recordStr(game, game.awayTeam)}${spreadLabel(game, game.awayTeam)}`;
+  const homeLabel = `${game.homeTeam}${recordStr(game, game.homeTeam)}${spreadLabel(game, game.homeTeam)}`;
   const awayPicked = pickedTeam === game.awayTeam;
   const homePicked = pickedTeam === game.homeTeam;
 
-  const lockNote = effectiveLock
-    ? `<span class="picks-lock-note">${gameLocked || weekLocked ? '🔒' : ''}</span>`
-    : gameWarning ? `<span class="picks-lock-note warn">⚠ Soon</span>` : '';
-
-  const tbBadge = isTb ? '<span class="tiebreaker-badge">TB</span>' : '';
-
   const tr = document.createElement('tr');
-  tr.className = [
-    'picks-row',
-    effectiveLock ? 'picks-row-locked' : '',
-    gameWarning && !gameLocked ? 'picks-row-warning' : '',
-  ].filter(Boolean).join(' ');
+  tr.className = ['picks-row', gameWarning && !effectiveLock ? 'picks-row-warning' : ''].filter(Boolean).join(' ');
   tr.dataset.gameId = game.id;
 
-  tr.innerHTML = `
-    <td class="picks-td-team">
-      <button class="picks-team-btn ${awayPicked ? 'picked' : ''}" data-game="${game.id}" data-team="${game.awayTeam}" ${effectiveLock ? 'disabled' : ''} aria-pressed="${awayPicked}">
-        ${awayLabel}
-      </button>
-      ${tbBadge}${lockNote}
-    </td>
-    <td class="picks-td-team">
-      <button class="picks-team-btn picks-team-home ${homePicked ? 'picked' : ''}" data-game="${game.id}" data-team="${game.homeTeam}" ${effectiveLock ? 'disabled' : ''} aria-pressed="${homePicked}">
-        ${homeLabel}
-      </button>
-    </td>
-    <td class="picks-td-key">
-      <input type="checkbox" class="picks-key-check" data-game="${game.id}"
-        ${isKeyPick ? 'checked' : ''}
-        ${!pickedTeam || effectiveLock ? 'disabled' : ''}
-        aria-label="Set as key pick for this game">
-    </td>
-  `;
+  // Away cell
+  const awayTd = document.createElement('td');
+  awayTd.className = 'picks-td-team';
+  const awayBtn = document.createElement('button');
+  awayBtn.className = 'picks-team-btn' + (awayPicked ? ' picked' : '');
+  awayBtn.textContent = awayLabel;
+  awayBtn.disabled = effectiveLock;
+  awayBtn.setAttribute('aria-pressed', String(awayPicked));
+  awayTd.appendChild(awayBtn);
+  if (isTb) {
+    const tb = document.createElement('span');
+    tb.className = 'tiebreaker-badge picks-inline-badge';
+    tb.textContent = 'TB';
+    awayTd.appendChild(tb);
+  }
+  if (gameWarning && !effectiveLock) {
+    const warn = document.createElement('span');
+    warn.className = 'picks-warn-badge';
+    warn.textContent = '⚠';
+    awayTd.appendChild(warn);
+  }
+
+  // Home cell
+  const homeTd = document.createElement('td');
+  homeTd.className = 'picks-td-team';
+  const homeBtn = document.createElement('button');
+  homeBtn.className = 'picks-team-btn' + (homePicked ? ' picked' : '');
+  homeBtn.textContent = homeLabel;
+  homeBtn.disabled = effectiveLock;
+  homeBtn.setAttribute('aria-pressed', String(homePicked));
+  homeTd.appendChild(homeBtn);
+
+  // Key pick cell
+  const keyTd = document.createElement('td');
+  keyTd.className = 'picks-td-key';
+  const keyCheck = document.createElement('input');
+  keyCheck.type = 'checkbox';
+  keyCheck.className = 'picks-key-check';
+  keyCheck.checked = isKeyPick;
+  keyCheck.disabled = !pickedTeam || effectiveLock;
+  keyCheck.setAttribute('aria-label', 'Set as key pick');
+  keyTd.appendChild(keyCheck);
+
+  tr.appendChild(awayTd);
+  tr.appendChild(homeTd);
+  tr.appendChild(keyTd);
 
   if (!effectiveLock) {
-    tr.querySelectorAll('.picks-team-btn').forEach(btn => {
-      btn.addEventListener('click', () => selectTeam(game.id, btn.dataset.team));
-    });
-    const keyCheck = tr.querySelector('.picks-key-check');
-    if (keyCheck) {
-      keyCheck.addEventListener('change', () => toggleKeyPick(game.id, keyCheck.checked));
-    }
+    awayBtn.addEventListener('click', () => selectTeam(game.id, game.awayTeam));
+    homeBtn.addEventListener('click', () => selectTeam(game.id, game.homeTeam));
+    keyCheck.addEventListener('change', () => toggleKeyPick(game.id, keyCheck.checked));
   }
 
   return tr;
 }
 
-// ── Locked picks table view ─────────────────────────────────────────────────
+// ── Locked picks table view ────────────────────────────────────────────────
 
 function showLockedPicksView() {
   document.getElementById('pick-content').style.display = 'none';
@@ -292,8 +297,7 @@ function showLockedPicksView() {
   banner.className = 'submitted-banner';
   banner.setAttribute('role', 'status');
   const submittedDate = new Date(submittedPicks.submittedAt).toLocaleString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
+    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   });
   banner.textContent = `✅ Picks submitted ${submittedDate}`;
   view.appendChild(banner);
@@ -301,112 +305,124 @@ function showLockedPicksView() {
   // Tiebreaker prediction
   if (tbGame) {
     const tbActual = tbGame.homeScore != null && tbGame.awayScore != null
-      ? tbGame.homeScore + tbGame.awayScore
-      : null;
+      ? tbGame.homeScore + tbGame.awayScore : null;
     const tbDiv = document.createElement('div');
     tbDiv.className = 'tb-prediction';
     tbDiv.innerHTML = `
       <span class="tb-label">Tiebreaker prediction</span>
       <span class="tb-score">${submittedPicks.tiebreakerScore} pts</span>
-      <span class="tb-game">${tbGame.awayTeam} @ ${tbGame.homeTeam.toUpperCase()} (O/U ${tbGame.overUnder})</span>
+      <span class="tb-game">${tbGame.awayTeam} @ ${tbGame.homeTeam} (O/U ${tbGame.overUnder})</span>
       ${tbActual !== null ? `<span class="tb-actual">Actual combined: ${tbActual}</span>` : ''}
     `;
     view.appendChild(tbDiv);
   }
 
-  // Day-grouped read-only table
-  const gameMap = Object.fromEntries(week.games.map(g => [g.id, g]));
+  // Single table with day-divider rows
   const pickMap = Object.fromEntries(submittedPicks.picks.map(p => [p.gameId, p]));
-
   const gamesInOrder = week.games
     .filter(g => pickMap[g.id])
     .sort((a, b) => new Date(a.commenceTime) - new Date(b.commenceTime));
-
   const dayGroups = groupGamesByDay(gamesInOrder);
 
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'picks-table-wrap';
+
+  const table = document.createElement('table');
+  table.className = 'picks-table picks-table-locked';
+
+  const thead = document.createElement('thead');
+  thead.innerHTML = `
+    <tr>
+      <th class="picks-th-team">Away</th>
+      <th class="picks-th-team">Home</th>
+      <th class="picks-th-key">Key Pick</th>
+      <th class="picks-th-result">Result</th>
+    </tr>
+  `;
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
   for (const group of dayGroups) {
-    const dayHeader = document.createElement('h2');
-    dayHeader.className = 'picks-day-header';
-    dayHeader.textContent = formatDayHeader(group.date);
-    view.appendChild(dayHeader);
-
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'picks-table-wrap';
-
-    const table = document.createElement('table');
-    table.className = 'picks-table picks-table-locked';
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>Away</th>
-          <th>Home</th>
-          <th class="picks-th-key">Key Pick</th>
-          <th>Result</th>
-        </tr>
-      </thead>
-    `;
-    const tbody = document.createElement('tbody');
+    const dayTr = document.createElement('tr');
+    dayTr.className = 'picks-day-row';
+    const dayTd = document.createElement('td');
+    dayTd.colSpan = 4;
+    dayTd.textContent = formatDayHeader(group.date);
+    dayTr.appendChild(dayTd);
+    tbody.appendChild(dayTr);
 
     for (const game of group.games) {
       const pick = pickMap[game.id];
       if (!pick) continue;
 
-      const result = getPickResult(pick, game);
-      const resultClass = result === 'win' ? 'result-win' : result === 'push' ? 'result-push' : result === 'loss' ? 'result-loss' : '';
+      const result     = getPickResult(pick, game);
+      const resultCls  = result === 'win' ? 'result-win' : result === 'push' ? 'result-push' : result === 'loss' ? 'result-loss' : '';
       const awayPicked = pick.pickedTeam === game.awayTeam;
       const homePicked = pick.pickedTeam === game.homeTeam;
-
-      const awaySide = game.spread != null
-        ? (game.favoredTeam === game.awayTeam ? game.spread : -game.spread)
-        : null;
-      const homeSide = game.spread != null
-        ? (game.favoredTeam === game.homeTeam ? game.spread : -game.spread)
-        : null;
-
-      const awayRecord = game.awayRecord ? ` (${game.awayRecord})` : '';
-      const homeRecord = game.homeRecord ? ` (${game.homeRecord})` : '';
-      const awaySpreadStr = awaySide != null ? ` ${awaySide > 0 ? '+' : ''}${awaySide}` : '';
-      const homeSpreadStr = homeSide != null ? ` ${homeSide > 0 ? '+' : ''}${homeSide}` : '';
-
-      const hasScore = game.homeScore != null;
-      const scoreHtml = hasScore
-        ? `<span class="pi-score">${game.awayScore}–${game.homeScore}</span>`
-        : game.status === 'in_progress' ? '<span class="pi-status live">LIVE</span>' : '';
+      const awayLabel  = `${game.awayTeam}${recordStr(game, game.awayTeam)}${spreadLabel(game, game.awayTeam)}`;
+      const homeLabel  = `${game.homeTeam}${recordStr(game, game.homeTeam)}${spreadLabel(game, game.homeTeam)}`;
 
       const tr = document.createElement('tr');
-      tr.className = 'picks-row picks-row-locked';
-      tr.innerHTML = `
-        <td class="picks-td-team">
-          <span class="picks-team-btn picks-team-readonly ${awayPicked ? 'picked' : ''}">
-            ${game.awayTeam}${awayRecord}${awaySpreadStr}
-          </span>
-        </td>
-        <td class="picks-td-team">
-          <span class="picks-team-btn picks-team-home picks-team-readonly ${homePicked ? 'picked' : ''}">
-            ${game.homeTeam.toUpperCase()}${homeRecord}${homeSpreadStr}
-          </span>
-        </td>
-        <td class="picks-td-key">
-          ${pick.isKeyPick ? '<span class="pi-key-star">⭐</span>' : ''}
-        </td>
-        <td class="picks-td-result">
-          ${scoreHtml}
-          ${result ? `<span class="team-result ${resultClass}">${result.toUpperCase()}</span>` : ''}
-        </td>
-      `;
+      tr.className = 'picks-row';
+
+      const awayTd = document.createElement('td');
+      awayTd.className = 'picks-td-team';
+      const awaySpan = document.createElement('span');
+      awaySpan.className = 'picks-team-label' + (awayPicked ? ' picked' : '');
+      awaySpan.textContent = awayLabel;
+      awayTd.appendChild(awaySpan);
+
+      const homeTd = document.createElement('td');
+      homeTd.className = 'picks-td-team';
+      const homeSpan = document.createElement('span');
+      homeSpan.className = 'picks-team-label' + (homePicked ? ' picked' : '');
+      homeSpan.textContent = homeLabel;
+      homeTd.appendChild(homeSpan);
+
+      const keyTd = document.createElement('td');
+      keyTd.className = 'picks-td-key';
+      if (pick.isKeyPick) {
+        const star = document.createElement('span');
+        star.className = 'pi-key-star';
+        star.textContent = '⭐';
+        keyTd.appendChild(star);
+      }
+
+      const resultTd = document.createElement('td');
+      resultTd.className = 'picks-td-result';
+      const resultInner = document.createElement('div');
+      resultInner.className = 'picks-result-inner';
+      if (game.homeScore != null) {
+        const score = document.createElement('span');
+        score.className = 'pi-score';
+        score.textContent = `${game.awayScore}–${game.homeScore}`;
+        resultInner.appendChild(score);
+      } else if (game.status === 'in_progress') {
+        const live = document.createElement('span');
+        live.className = 'pi-status live';
+        live.textContent = 'LIVE';
+        resultInner.appendChild(live);
+      }
+      if (result) {
+        const badge = document.createElement('span');
+        badge.className = `team-result ${resultCls}`;
+        badge.textContent = result.toUpperCase();
+        resultInner.appendChild(badge);
+      }
+      resultTd.appendChild(resultInner);
+
+      tr.appendChild(awayTd);
+      tr.appendChild(homeTd);
+      tr.appendChild(keyTd);
+      tr.appendChild(resultTd);
       tbody.appendChild(tr);
     }
-
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
-    view.appendChild(tableWrap);
   }
 
-  const legend = document.createElement('p');
-  legend.className = 'picks-home-legend';
-  legend.textContent = 'Home team displayed in ALL CAPS';
-  view.appendChild(legend);
-
+  table.appendChild(tbody);
+  scrollWrap.appendChild(table);
+  view.appendChild(scrollWrap);
   view.style.display = '';
 }
 
@@ -425,7 +441,6 @@ function selectTeam(gameId, team) {
 
 function toggleKeyPick(gameId, checked) {
   if (!state.selections[gameId]) return;
-  // Unset previous key pick if different game
   if (checked && state.keyPickId && state.keyPickId !== gameId) {
     const prev = state.keyPickId;
     state.keyPickId = gameId;
@@ -448,7 +463,7 @@ function wireTiebreakerInput() {
   const { week } = state;
   const tbGame = week.games.find(g => g.id === week.tiebreakerGameId);
   if (tbGame) {
-    document.getElementById('tb-game-label').textContent = `${tbGame.awayTeam} @ ${tbGame.homeTeam.toUpperCase()}`;
+    document.getElementById('tb-game-label').textContent = `${tbGame.awayTeam} @ ${tbGame.homeTeam}`;
   }
 
   const input = document.getElementById('tiebreaker-input');

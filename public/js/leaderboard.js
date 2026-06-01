@@ -209,7 +209,7 @@ function renderWeeklyMatrix(data) {
     const isTb = game.id === tiebreakerGameId;
     const spreadStr = game.spread > 0 ? `+${game.spread}` : `${game.spread}`;
     th.innerHTML = `
-      <span class="ap-matchup">${awayAbbr}${isTb ? '★' : ''} @<strong>${homeAbbr}</strong></span>
+      <span class="ap-matchup">${awayAbbr}${isTb ? '★' : ''} @${homeAbbr}</span>
       <span class="ap-spread-line">${game.favoredTeam ? `${teamAbbr(game.favoredTeam)} ${spreadStr}` : '—'}</span>
       ${gameScoreLabel(game)}
     `;
@@ -254,8 +254,7 @@ function renderWeeklyMatrix(data) {
       if (!pick) {
         td.innerHTML = '<span class="ap-empty">—</span>';
       } else {
-        const isHome = pick.pickedTeam === game.homeTeam;
-        const abbr   = isHome ? teamAbbr(pick.pickedTeam).toUpperCase() : teamAbbr(pick.pickedTeam);
+        const abbr   = teamAbbr(pick.pickedTeam);
         const result = game ? pickResult(pick, game) : null;
         const cls    = [
           pick.isKeyPick ? 'ap-key' : '',
@@ -300,7 +299,7 @@ function renderWeeklyMatrix(data) {
 
   const legend = document.createElement('p');
   legend.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem';
-  legend.innerHTML = '★ = key pick &nbsp;·&nbsp; Scores update live every 60 seconds &nbsp;·&nbsp; Home team displayed in ALL CAPS';
+  legend.innerHTML = '★ = key pick &nbsp;·&nbsp; Scores update live every 60 seconds';
   wrap.appendChild(legend);
 
   document.getElementById('last-updated').textContent =

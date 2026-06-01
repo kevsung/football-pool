@@ -138,9 +138,8 @@ function renderHeader(cols, tiebreakerGameId) {
     const isTb = game.id === tiebreakerGameId;
     const spreadStr = game.spread > 0 ? `+${game.spread}` : `${game.spread}`;
 
-    // Home team in ALL CAPS per convention; abbr already upper but label clarifies
     th.innerHTML = `
-      <span class="ap-matchup">${awayAbbr}${isTb ? '★' : ''} @<strong>${homeAbbr}</strong></span>
+      <span class="ap-matchup">${awayAbbr}${isTb ? '★' : ''} @${homeAbbr}</span>
       <span class="ap-spread-line">${game.favoredTeam ? `${teamAbbr(game.favoredTeam)} ${spreadStr}` : '—'}</span>
       ${gameScoreLabel(game)}
     `;
@@ -198,10 +197,7 @@ function renderBody(rows, cols, games, tiebreakerGameId) {
       if (!pick) {
         td.innerHTML = '<span class="ap-empty">—</span>';
       } else {
-        const isHome = pick.pickedTeam === game.homeTeam;
-        const abbr   = isHome
-          ? teamAbbr(pick.pickedTeam).toUpperCase()
-          : teamAbbr(pick.pickedTeam);
+        const abbr   = teamAbbr(pick.pickedTeam);
         const result = game ? pickResult(pick, game) : null;
         const cls    = [
           pick.isKeyPick ? 'ap-key' : '',

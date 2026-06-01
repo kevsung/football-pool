@@ -811,29 +811,22 @@ thead th.ap-name-col { z-index: 3; }
 [data-theme="dark"] .ap-extra-col { background: rgba(88,166,255,.04); }
 .ap-pts-col { font-weight: 700; color: var(--text); }
 
-/* ── My Picks page — day-grouped table ────────────────────────────────── */
-.picks-day-header {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 1.5rem 0 0.4rem;
-  padding-bottom: 0.35rem;
-  border-bottom: 2px solid var(--border);
-}
-.picks-day-header:first-child { margin-top: 0; }
-
-.picks-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 0.25rem; }
+/* ── My Picks page — single table with day-divider rows ──────────────── */
+.picks-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 .picks-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
-.picks-table th {
+
+/* Sticky header — sits just below the 56px nav bar */
+.picks-table thead th {
+  position: sticky;
+  top: 56px;
+  z-index: 4;
   text-align: left;
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   background: var(--bg-hover);
   font-size: 0.75rem;
   font-weight: 600;
@@ -842,22 +835,50 @@ thead th.ap-name-col { z-index: 3; }
   letter-spacing: 0.04em;
   border-bottom: 2px solid var(--border);
   white-space: nowrap;
+  box-shadow: 0 1px 0 var(--border);
 }
-.picks-th-key { text-align: center; width: 80px; }
-.picks-table td { border-bottom: 1px solid var(--border); vertical-align: middle; }
-.picks-table tr:last-child td { border-bottom: none; }
+.picks-th-team { min-width: 200px; }
+.picks-th-key  { text-align: center; width: 90px; }
+.picks-th-result { width: 140px; white-space: nowrap; }
 
-.picks-row-locked { opacity: 0.75; }
+/* Body cells */
+.picks-table td { border-bottom: 1px solid var(--border); vertical-align: middle; }
+.picks-table tbody tr:last-child td { border-bottom: none; }
+
+/* Day-divider rows */
+.picks-day-row td {
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-hover);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+  border-top: 2px solid var(--border);
+}
+.picks-day-row:first-child td { border-top: none; }
+
+/* Game rows */
 .picks-row-warning { background: rgba(154,103,0,.04); }
 
-.picks-td-team { padding: 0.45rem 0.5rem; }
-.picks-td-key  { text-align: center; padding: 0.45rem 0.5rem; }
-.picks-td-result { padding: 0.45rem 0.5rem; white-space: nowrap; display: flex; align-items: center; gap: 0.4rem; }
+.picks-td-team   { padding: 0.4rem 0.75rem; }
+.picks-td-key    { text-align: center; padding: 0.4rem 0.5rem; }
+.picks-td-result { padding: 0.4rem 0.75rem; }
 
-/* Team buttons */
+/* Result inner flex wrapper — keeps badges aligned without breaking cell height */
+.picks-result-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+}
+
+/* Team buttons (interactive) */
 .picks-team-btn {
-  display: inline-block;
-  padding: 0.3rem 0.65rem;
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-card);
@@ -876,30 +897,34 @@ thead th.ap-name-col { z-index: 3; }
   font-weight: 700;
 }
 [data-theme="dark"] .picks-team-btn.picked { background: rgba(63,185,80,.1); }
-.picks-team-btn:disabled { cursor: default; }
-.picks-team-home { font-weight: 600; }
+.picks-team-btn:disabled { cursor: default; opacity: 0.85; }
 
-/* Read-only variant */
-.picks-team-readonly { cursor: default; }
-.picks-team-readonly:hover { border-color: var(--border); background: var(--bg-card); }
-.picks-team-readonly.picked { border-color: var(--accent); background: rgba(26,116,49,.08); }
-[data-theme="dark"] .picks-team-readonly.picked { background: rgba(63,185,80,.1); }
+/* Team labels (read-only locked view) */
+.picks-team-label {
+  display: block;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.picks-team-label.picked {
+  border-color: var(--accent);
+  background: rgba(26,116,49,.08);
+  color: var(--text);
+  font-weight: 700;
+}
+[data-theme="dark"] .picks-team-label.picked { background: rgba(63,185,80,.1); }
 
-/* Lock note inline */
-.picks-lock-note { font-size: 0.7rem; margin-left: 0.3rem; color: var(--text-muted); }
-.picks-lock-note.warn { color: var(--warning); }
+/* Inline badges next to buttons */
+.picks-inline-badge { margin-left: 0.35rem; vertical-align: middle; }
+.picks-warn-badge   { font-size: 0.75rem; color: var(--warning); margin-left: 0.25rem; }
 
 /* Key pick checkbox */
 .picks-key-check { width: 16px; height: 16px; accent-color: var(--warning); cursor: pointer; }
 .picks-key-check:disabled { cursor: default; opacity: 0.4; }
-
-/* Home team legend */
-.picks-home-legend {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.75rem;
-  font-style: italic;
-}
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
