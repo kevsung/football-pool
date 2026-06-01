@@ -24,8 +24,9 @@
  *  Week 1 (Sep 6)  — 12 final, 4 in_progress, 14 scheduled  (lock: past)
  *  Week 2 (Sep 13) — 30 final                                (lock: past)
  *  Week 3 (Sep 20) — 25 final, 5 scheduled                   (lock: past)
- *  Week 4 (Sep 27) — 8 final, 7 in_progress, 15 scheduled   (lock: past)
- *  All 26 fake users have submitted picks for all 4 weeks.
+ *  Week 4 (next Sat noon ET) — 30 scheduled                 (lock: future, no picks)
+ *  Weeks 1–3: all 26 fake users have submitted picks.
+ *  Week 4: open for pick-submission UI testing — no picks written.
  */
 
 'use strict';
@@ -237,46 +238,79 @@ const W3_GAMES = [
   g('w3-f12','NFL','Pittsburgh Steelers','Indianapolis Colts','Pittsburgh Steelers',-3.5,43.5,'2025-09-23T00:15:00Z','scheduled'),
 ];
 
+// ── Week 4 dynamic lock time ──────────────────────────────────────────────────
+// Week 4 is left open (no picks written) so the pick-submission UI can be
+// tested end-to-end. The lock is always set to the next Saturday at noon
+// Eastern (16:00 UTC = noon EDT, UTC−4) whenever the seed is run.
+
+function nextSaturdayNoonET() {
+  const now = new Date();
+  // (6 − weekday + 7) % 7 gives 0 when today is Saturday; || 7 ensures we
+  // always land on a future Saturday, never today.
+  const daysUntilSat = (6 - now.getUTCDay() + 7) % 7 || 7;
+  return new Date(Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(),
+    now.getUTCDate() + daysUntilSat,
+    16, 0, 0, 0,   // noon EDT (UTC−4); change to 17 in EST months if desired
+  ));
+}
+
+const W4_SAT = nextSaturdayNoonET();
+const W4_LOCK_TIME = W4_SAT.toISOString();
+
+// Return an ISO timestamp offset from the Week-4 lock Saturday.
+// dayOffset 0 = that Saturday, 1 = Sunday, 2 = Monday, −2 = Thursday, etc.
+function w4t(dayOffset, utcHour, utcMin = 0) {
+  return new Date(Date.UTC(
+    W4_SAT.getUTCFullYear(), W4_SAT.getUTCMonth(),
+    W4_SAT.getUTCDate() + dayOffset,
+    utcHour, utcMin,
+  )).toISOString();
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
-// WEEK 4 — Sep 27, 2025   lock: 2025-09-27T16:00:00Z
-// 8 final · 7 in_progress · 15 scheduled
+// WEEK 4 — lock: next Saturday noon ET (dynamic)
+// 30 scheduled · no scores · no picks — open for UI testing
 // ══════════════════════════════════════════════════════════════════════════════
 
 const W4_GAMES = [
-  // Final
-  g('w4-n01','NCAAF','Alabama Crimson Tide','Mississippi State Bulldogs','Alabama Crimson Tide',-21.5,56.5,'2025-09-27T16:00:00Z','final',42,14),
-  g('w4-n02','NCAAF','Georgia Bulldogs','Auburn Tigers','Georgia Bulldogs',-14.5,52.5,'2025-09-27T16:00:00Z','final',28,10),
-  g('w4-n03','NCAAF','Ohio State Buckeyes','Rutgers Scarlet Knights','Ohio State Buckeyes',-28.5,59.5,'2025-09-27T16:00:00Z','final',52,21),
-  g('w4-n04','NCAAF','Texas Longhorns','Oklahoma State Cowboys','Texas Longhorns',-10.5,54.5,'2025-09-27T16:00:00Z','final',35,21),
-  g('w4-n05','NCAAF','LSU Tigers','South Carolina Gamecocks','LSU Tigers',-13.5,55.5,'2025-09-27T16:00:00Z','final',38,17),
-  g('w4-f01','NFL','Kansas City Chiefs','New York Jets','Kansas City Chiefs',-10.5,46.5,'2025-09-28T17:00:00Z','final',27,14),
-  g('w4-f02','NFL','Philadelphia Eagles','Tampa Bay Buccaneers','Philadelphia Eagles',-6.5,46.5,'2025-09-28T17:00:00Z','final',24,17),
-  g('w4-n06','NCAAF','Penn State Nittany Lions','Indiana Hoosiers','Penn State Nittany Lions',-17.5,47.5,'2025-09-27T16:00:00Z','final',35,10),
-  // In progress
-  g('w4-n07','NCAAF','Tennessee Volunteers','Missouri Tigers','Tennessee Volunteers',-3.5,52.5,'2025-09-27T19:30:00Z','in_progress',14,10),
-  g('w4-n08','NCAAF','Oregon Ducks','Washington Huskies','Oregon Ducks',-7.5,59.5,'2025-09-27T19:30:00Z','in_progress',21,17),
-  g('w4-n09','NCAAF','Notre Dame Fighting Irish','Clemson Tigers','Notre Dame Fighting Irish',-3.5,49.5,'2025-09-27T19:30:00Z','in_progress',10,14),
-  g('w4-n10','NCAAF','Ole Miss Rebels','Vanderbilt Commodores','Ole Miss Rebels',-17.5,63.5,'2025-09-27T19:30:00Z','in_progress',28,7),
-  g('w4-f03','NFL','Detroit Lions','Green Bay Packers','Detroit Lions',-3.5,48.5,'2025-09-28T17:00:00Z','in_progress',14,17),
-  g('w4-f04','NFL','Buffalo Bills','New England Patriots','Buffalo Bills',-14.5,43.5,'2025-09-28T17:00:00Z','in_progress',21,7),
-  g('w4-n11','NCAAF','Utah Utes','Arizona State Sun Devils','Utah Utes',-4.5,50.5,'2025-09-28T00:00:00Z','in_progress',17,10),
-  // Scheduled
-  g('w4-n12','NCAAF','Florida Gators','Kentucky Wildcats','Florida Gators',-6.5,47.5,'2025-09-27T16:00:00Z','scheduled'),
-  g('w4-n13','NCAAF','USC Trojans','Stanford Cardinal','USC Trojans',-17.5,62.5,'2025-09-27T19:30:00Z','scheduled'),
-  g('w4-n14','NCAAF','Kansas State Wildcats','TCU Horned Frogs','Kansas State Wildcats',-3.5,50.5,'2025-09-27T19:30:00Z','scheduled'),
-  g('w4-n15','NCAAF','Iowa Hawkeyes','Michigan State Spartans','Iowa Hawkeyes',-3.5,41.5,'2025-09-27T19:30:00Z','scheduled'),
-  g('w4-n16','NCAAF','North Carolina Tar Heels','Pittsburgh Panthers','North Carolina Tar Heels',-7.5,55.5,'2025-09-28T00:00:00Z','scheduled'),
-  g('w4-n17','NCAAF','Florida State Seminoles','Louisville Cardinals','Florida State Seminoles',-6.5,52.5,'2025-09-28T00:00:00Z','scheduled'),
-  g('w4-n18','NCAAF','Colorado Buffaloes','Arizona Wildcats','Colorado Buffaloes',-3.5,55.5,'2025-09-28T02:00:00Z','scheduled'),
-  g('w4-f05','NFL','San Francisco 49ers','Arizona Cardinals','San Francisco 49ers',-7.5,48.5,'2025-09-28T17:00:00Z','scheduled'),
-  g('w4-f06','NFL','Cincinnati Bengals','Indianapolis Colts','Cincinnati Bengals',-6.5,43.5,'2025-09-28T17:00:00Z','scheduled'),
-  g('w4-f07','NFL','Baltimore Ravens','Cleveland Browns','Baltimore Ravens',-10.5,42.5,'2025-09-28T17:00:00Z','scheduled'),
-  g('w4-f08','NFL','Minnesota Vikings','Seattle Seahawks','Minnesota Vikings',-3.5,46.5,'2025-09-28T20:25:00Z','scheduled'),
-  g('w4-f09','NFL','Los Angeles Rams','Dallas Cowboys','Los Angeles Rams',-2.5,48.5,'2025-09-28T20:25:00Z','scheduled'),
-  g('w4-f10','NFL','Chicago Bears','Carolina Panthers','Chicago Bears',-7.5,41.5,'2025-09-28T17:00:00Z','scheduled'),
-  g('w4-f11','NFL','Atlanta Falcons','New Orleans Saints','Atlanta Falcons',-3.5,44.5,'2025-09-29T00:20:00Z','scheduled'),
-  // MNF tiebreaker
-  g('w4-f12','NFL','Houston Texans','Los Angeles Chargers','Los Angeles Chargers',-2.5,46.5,'2025-09-30T00:15:00Z','scheduled'),
+  // Saturday — noon ET (at lock, last chance to submit)
+  g('w4-n01','NCAAF','Alabama Crimson Tide','Mississippi State Bulldogs','Alabama Crimson Tide',-21.5,56.5,w4t(0,16,0),'scheduled'),
+  g('w4-n02','NCAAF','Georgia Bulldogs','Auburn Tigers','Georgia Bulldogs',-14.5,52.5,w4t(0,16,0),'scheduled'),
+  g('w4-n03','NCAAF','Ohio State Buckeyes','Rutgers Scarlet Knights','Ohio State Buckeyes',-28.5,59.5,w4t(0,16,0),'scheduled'),
+  g('w4-n04','NCAAF','Texas Longhorns','Oklahoma State Cowboys','Texas Longhorns',-10.5,54.5,w4t(0,16,0),'scheduled'),
+  g('w4-n05','NCAAF','LSU Tigers','South Carolina Gamecocks','LSU Tigers',-13.5,55.5,w4t(0,16,0),'scheduled'),
+  g('w4-n06','NCAAF','Penn State Nittany Lions','Indiana Hoosiers','Penn State Nittany Lions',-17.5,47.5,w4t(0,16,0),'scheduled'),
+  g('w4-n12','NCAAF','Florida Gators','Kentucky Wildcats','Florida Gators',-6.5,47.5,w4t(0,16,0),'scheduled'),
+  // Saturday — 3:30 pm ET (after lock)
+  g('w4-n07','NCAAF','Tennessee Volunteers','Missouri Tigers','Tennessee Volunteers',-3.5,52.5,w4t(0,19,30),'scheduled'),
+  g('w4-n08','NCAAF','Oregon Ducks','Washington Huskies','Oregon Ducks',-7.5,59.5,w4t(0,19,30),'scheduled'),
+  g('w4-n09','NCAAF','Notre Dame Fighting Irish','Clemson Tigers','Notre Dame Fighting Irish',-3.5,49.5,w4t(0,19,30),'scheduled'),
+  g('w4-n10','NCAAF','Ole Miss Rebels','Vanderbilt Commodores','Ole Miss Rebels',-17.5,63.5,w4t(0,19,30),'scheduled'),
+  g('w4-n13','NCAAF','USC Trojans','Stanford Cardinal','USC Trojans',-17.5,62.5,w4t(0,19,30),'scheduled'),
+  g('w4-n14','NCAAF','Kansas State Wildcats','TCU Horned Frogs','Kansas State Wildcats',-3.5,50.5,w4t(0,19,30),'scheduled'),
+  g('w4-n15','NCAAF','Iowa Hawkeyes','Michigan State Spartans','Iowa Hawkeyes',-3.5,41.5,w4t(0,19,30),'scheduled'),
+  // Saturday night — 8 pm ET (after lock)
+  g('w4-n11','NCAAF','Utah Utes','Arizona State Sun Devils','Utah Utes',-4.5,50.5,w4t(1,0,0),'scheduled'),
+  g('w4-n16','NCAAF','North Carolina Tar Heels','Pittsburgh Panthers','North Carolina Tar Heels',-7.5,55.5,w4t(1,0,0),'scheduled'),
+  g('w4-n17','NCAAF','Florida State Seminoles','Louisville Cardinals','Florida State Seminoles',-6.5,52.5,w4t(1,0,0),'scheduled'),
+  g('w4-n18','NCAAF','Colorado Buffaloes','Arizona Wildcats','Colorado Buffaloes',-3.5,55.5,w4t(1,2,0),'scheduled'),
+  // Sunday NFL — 1 pm ET
+  g('w4-f01','NFL','Kansas City Chiefs','New York Jets','Kansas City Chiefs',-10.5,46.5,w4t(1,17,0),'scheduled'),
+  g('w4-f02','NFL','Philadelphia Eagles','Tampa Bay Buccaneers','Philadelphia Eagles',-6.5,46.5,w4t(1,17,0),'scheduled'),
+  g('w4-f03','NFL','Detroit Lions','Green Bay Packers','Detroit Lions',-3.5,48.5,w4t(1,17,0),'scheduled'),
+  g('w4-f04','NFL','Buffalo Bills','New England Patriots','Buffalo Bills',-14.5,43.5,w4t(1,17,0),'scheduled'),
+  g('w4-f05','NFL','San Francisco 49ers','Arizona Cardinals','San Francisco 49ers',-7.5,48.5,w4t(1,17,0),'scheduled'),
+  g('w4-f06','NFL','Cincinnati Bengals','Indianapolis Colts','Cincinnati Bengals',-6.5,43.5,w4t(1,17,0),'scheduled'),
+  g('w4-f07','NFL','Baltimore Ravens','Cleveland Browns','Baltimore Ravens',-10.5,42.5,w4t(1,17,0),'scheduled'),
+  g('w4-f10','NFL','Chicago Bears','Carolina Panthers','Chicago Bears',-7.5,41.5,w4t(1,17,0),'scheduled'),
+  // Sunday NFL — 4:25 pm ET
+  g('w4-f08','NFL','Minnesota Vikings','Seattle Seahawks','Minnesota Vikings',-3.5,46.5,w4t(1,20,25),'scheduled'),
+  g('w4-f09','NFL','Los Angeles Rams','Dallas Cowboys','Los Angeles Rams',-2.5,48.5,w4t(1,20,25),'scheduled'),
+  // Sunday Night Football
+  g('w4-f11','NFL','Atlanta Falcons','New Orleans Saints','Atlanta Falcons',-3.5,44.5,w4t(2,0,20),'scheduled'),
+  // Monday Night Football — tiebreaker
+  g('w4-f12','NFL','Houston Texans','Los Angeles Chargers','Los Angeles Chargers',-2.5,46.5,w4t(3,0,15),'scheduled'),
 ];
 
 // ── Weeks definition ──────────────────────────────────────────────────────────
@@ -285,7 +319,7 @@ const WEEKS = [
   { weekNumber: 1, season: 2025, lockTime: '2025-09-06T16:00:00Z', tiebreakerGameId: 'w1-f12', games: W1_GAMES },
   { weekNumber: 2, season: 2025, lockTime: '2025-09-13T16:00:00Z', tiebreakerGameId: 'w2-f12', games: W2_GAMES },
   { weekNumber: 3, season: 2025, lockTime: '2025-09-20T16:00:00Z', tiebreakerGameId: 'w3-f12', games: W3_GAMES },
-  { weekNumber: 4, season: 2025, lockTime: '2025-09-27T16:00:00Z', tiebreakerGameId: 'w4-f12', games: W4_GAMES },
+  { weekNumber: 4, season: 2026, lockTime: W4_LOCK_TIME, tiebreakerGameId: 'w4-f12', games: W4_GAMES },
 ].map(w => ({ ...w, manualLock: false, createdAt: '2026-05-31T20:00:00Z', lastUpdated: '2026-05-31T20:00:00Z' }));
 
 // ── Picks generation ──────────────────────────────────────────────────────────
@@ -350,9 +384,16 @@ write(path.join(DATA_DIR, 'seed-users.json'), users);
 const allWeekPicks = [];
 for (let i = 0; i < WEEKS.length; i++) {
   const week = WEEKS[i];
+  write(path.join(WEEKS_DIR, `week${week.weekNumber}.json`), week);
+
+  if (week.weekNumber === 4) {
+    // Week 4 is intentionally open — write an empty picks file, no submissions yet.
+    write(path.join(PICKS_DIR, `week${week.weekNumber}.json`), []);
+    continue;
+  }
+
   const picks = generateWeekPicks(week, i + 1);
   validate(picks, week.games, week.weekNumber);
-  write(path.join(WEEKS_DIR, `week${week.weekNumber}.json`), week);
   write(path.join(PICKS_DIR, `week${week.weekNumber}.json`), picks);
   allWeekPicks.push({ week, picks });
 }
@@ -403,7 +444,8 @@ console.log(`
 ✅  Seed complete.
 
   seed-users.json : ${users.length} fake users  (1 fake admin + ${users.length - 1} members)
-  Weeks           : ${WEEKS.length}
+  Weeks  : ${WEEKS.length}  (weeks 1–3 complete · week 4 open for UI testing)
+  Week 4 lock : ${W4_LOCK_TIME}
 
 ⚠️  data/users.json and data/invites.json were NOT modified.
   Fake users are written to data/seed-users.json (gitignored).

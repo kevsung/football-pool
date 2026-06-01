@@ -10,6 +10,7 @@ router.get('/week/:weekNumber', (req, res) => {
   const weekNumber = parseInt(req.params.weekNumber);
   const allPicks = dataStore.getWeekPicks(weekNumber);
   const userPicks = allPicks.find(p => p.userId === req.user.id);
+  console.log(`[picks] GET week${weekNumber} userId=${req.user.id} totalPicksets=${allPicks.length} userSubmitted=${!!userPicks}`);
   if (!userPicks) return res.json({ submitted: false });
   res.json({ submitted: true, ...userPicks });
 });

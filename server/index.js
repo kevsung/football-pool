@@ -89,18 +89,25 @@ app.get('/api/pool', (req, res) => {
 
 app.get('/api/config', isAuthenticated, (req, res) => {
   const { poolName } = dataStore.getConfig();
-  const weekNumber = dataStore.getCurrentWeekNumber();
+  const allWeeks = dataStore.getAllWeekNumbers();
+  const weekNumber = allWeeks.length > 0 ? Math.max(...allWeeks) : null;
   let weekLocked = false;
   if (weekNumber) {
     const week = dataStore.getWeek(weekNumber);
     if (week) weekLocked = !!(week.manualLock || (week.lockTime && new Date(week.lockTime) <= new Date()));
   }
+  console.log(`[config] userId=${req.user.id} allWeeks=[${allWeeks}] currentWeek=${weekNumber} weekLocked=${weekLocked}`);
   res.json({ weekNumber, user: req.user, poolName, weekLocked });
 });
 
 app.get('/api/weeks/:weekNumber', isAuthenticated, (req, res) => {
-  const week = dataStore.getWeek(parseInt(req.params.weekNumber));
-  if (!week) return res.status(404).json({ error: 'Week not found' });
+  const n = parseInt(req.params.weekNumber);
+  const week = dataStore.getWeek(n);
+  if (!week) {
+    console.log(`[weeks] week${n} not found — data/weeks/week${n}.json missing (run npm run seed?)`);
+    return res.status(404).json({ error: 'Week not found' });
+  }
+  console.log(`[weeks] week${n} — ${week.games.length} games, lockTime=${week.lockTime}, manualLock=${week.manualLock}`);
   res.json(week);
 });
 

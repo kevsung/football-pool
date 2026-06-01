@@ -13,7 +13,11 @@ let state = {
 };
 
 async function api(url, opts = {}) {
-  const res = await fetch(url, { headers: { 'Accept': 'application/json' }, ...opts });
+  const { headers: extraHeaders, ...restOpts } = opts;
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/json', ...extraHeaders },
+    ...restOpts,
+  });
   if (res.status === 401) { location.href = '/login'; return null; }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -57,7 +61,11 @@ async function init() {
     startCountdown();
     if (hasActiveGames(week)) scheduleScoreRefresh();
   } catch (err) {
-    document.getElementById('loading').textContent = `Error: ${err.message}`;
+    // Re-show the loading element so the error is visible even if it was
+    // hidden mid-init (e.g. week or picks fetch failed after config loaded).
+    const loadingEl = document.getElementById('loading');
+    loadingEl.style.display = '';
+    loadingEl.textContent = `Error loading picks page: ${err.message}`;
   }
 }
 
@@ -220,15 +228,11 @@ function buildGameRow(game) {
   const awayBtn = document.createElement('button');
   awayBtn.className = 'picks-team-btn' + (awayPicked ? ' picked' : '');
   awayBtn.textContent = awayLabel;
-  awayBtn.disabled = effectiveLock;
+  const atLimit = Object.keys(state.selections).length >= 15 && !awayPicked;
+  awayBtn.disabled = effectiveLock || atLimit;
+  if (atLimit && !effectiveLock) awayBtn.classList.add('picks-btn-disabled');
   awayBtn.setAttribute('aria-pressed', String(awayPicked));
   awayTd.appendChild(awayBtn);
-  if (isTb) {
-    const tb = document.createElement('span');
-    tb.className = 'tiebreaker-badge picks-inline-badge';
-    tb.textContent = 'TB';
-    awayTd.appendChild(tb);
-  }
   if (gameWarning && !effectiveLock) {
     const warn = document.createElement('span');
     warn.className = 'picks-warn-badge';
@@ -242,7 +246,9 @@ function buildGameRow(game) {
   const homeBtn = document.createElement('button');
   homeBtn.className = 'picks-team-btn' + (homePicked ? ' picked' : '');
   homeBtn.textContent = homeLabel;
-  homeBtn.disabled = effectiveLock;
+  const homeAtLimit = Object.keys(state.selections).length >= 15 && !homePicked;
+  homeBtn.disabled = effectiveLock || homeAtLimit;
+  if (homeAtLimit && !effectiveLock) homeBtn.classList.add('picks-btn-disabled');
   homeBtn.setAttribute('aria-pressed', String(homePicked));
   homeTd.appendChild(homeBtn);
 
@@ -488,9 +494,9 @@ function updateCounters() {
   };
 
   set('cnt-picks', `${pickCount} / 15`, pickCount === 15);
-  set('cnt-key', hasKey
-    ? (state.week.games.find(g => g.id === state.keyPickId)?.homeTeam.split(' ').pop() || 'Set')
-    : 'None', hasKey);
+  const keyGame = hasKey ? state.week.games.find(g => g.id === state.keyPickId) : null;
+  const keyTeamName = keyGame ? (state.selections[state.keyPickId] || keyGame.homeTeam) : null;
+  set('cnt-key', keyTeamName || 'None', hasKey);
   set('cnt-tb', hasTb ? state.tiebreakerScore : '—', hasTb);
 
   const btn = document.getElementById('submit-btn');

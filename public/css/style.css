@@ -894,6 +894,7 @@ thead th.ap-name-col { z-index: 3; }
 }
 [data-theme="dark"] .picks-team-btn.picked { background: rgba(63,185,80,.1); }
 .picks-team-btn:disabled { cursor: default; opacity: 0.85; }
+.picks-team-btn.picks-btn-disabled { opacity: 0.4; background: var(--bg-alt, #f0f0f0); color: var(--text-muted); }
 
 /* Team labels (read-only locked view) */
 .picks-team-label {
