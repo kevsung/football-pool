@@ -957,12 +957,52 @@ thead th.ap-name-col { z-index: 3; }
 .review-game-meta    { color: var(--text-muted); white-space: nowrap; }
 .review-game-line    { color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; margin-left: auto; }
 
+/* ── Mobile hamburger button ──────────────────────────────────────────── */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.55rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+.hamburger-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* ── Mobile nav drawer ────────────────────────────────────────────────── */
+.mobile-nav {
+  display: none;
+  flex-direction: column;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+.mobile-nav.is-open { display: flex; }
+.mobile-nav a {
+  display: block;
+  padding: 0.85rem 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s, color 0.12s;
+}
+.mobile-nav a:last-child { border-bottom: none; }
+.mobile-nav a:hover { background: var(--bg-hover); color: var(--text); text-decoration: none; }
+.mobile-nav a.active { color: var(--text); font-weight: 700; background: var(--bg-hover); }
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .site-nav { display: none; }
+  .hamburger-btn { display: inline-flex; align-items: center; justify-content: center; }
+  .user-name { display: none; }
+}
+
 @media (max-width: 600px) {
   .games-grid { grid-template-columns: 1fr; }
   .header-inner { gap: 0.5rem; }
-  .site-nav a { padding: 0.3rem 0.5rem; }
   .pick-counter { gap: 0.75rem; }
   .week-header { flex-direction: column; align-items: flex-start; }
-  .user-name { display: none; }
 }

@@ -70,3 +70,44 @@ async function loadPublicPoolName() {
 }
 
 // syncThemeButton is kept for any future use but no longer auto-wired globally.
+
+// ── Mobile nav ───────────────────────────────────────────────────────────────
+function initMobileNav() {
+  const btn = document.getElementById('hamburger-btn');
+  const nav = document.getElementById('mobile-nav');
+  if (!btn || !nav) return;
+
+  function setOpen(open) {
+    nav.classList.toggle('is-open', open);
+    btn.setAttribute('aria-expanded', String(open));
+    btn.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+    btn.textContent = open ? '✕' : '☰';
+  }
+
+  btn.addEventListener('click', () => setOpen(!nav.classList.contains('is-open')));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && nav.classList.contains('is-open')) setOpen(false);
+  });
+
+  document.addEventListener('click', e => {
+    if (nav.classList.contains('is-open') && !nav.contains(e.target) && !btn.contains(e.target)) {
+      setOpen(false);
+    }
+  });
+
+  nav.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => setOpen(false));
+  });
+
+  // Mirror desktop admin-link visibility to mobile counterpart
+  const desktopAdmin = document.getElementById('admin-link');
+  const mobileAdmin  = document.getElementById('admin-link-mobile');
+  if (desktopAdmin && mobileAdmin) {
+    new MutationObserver(() => {
+      mobileAdmin.style.display = desktopAdmin.style.display;
+    }).observe(desktopAdmin, { attributes: true, attributeFilter: ['style'] });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initMobileNav);

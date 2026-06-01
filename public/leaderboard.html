@@ -23,8 +23,15 @@
     </nav>
     <div class="header-actions">
       <span class="user-name" id="user-name"></span>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav">☰</button>
       <button class="btn-ghost" id="signout-btn">Sign out</button>
     </div>
+  </div>
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="/">My Picks</a>
+    <a href="/leaderboard" class="active" aria-current="page">Standings</a>
+    <a href="/settings">Settings</a>
+    <a href="/admin" id="admin-link-mobile" style="display:none">Admin</a>
   </div>
 </header>
 
