@@ -12,7 +12,11 @@ function ensureDir(dir) {
 
 function readJSON(filePath) {
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    let raw = fs.readFileSync(filePath, 'utf8');
+    // Strip UTF-8 BOM (﻿) added by some Windows editors
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+    const content = raw.trim();
+    return content ? JSON.parse(content) : null;
   } catch (err) {
     if (err.code === 'ENOENT') return null;
     throw err;
@@ -60,7 +64,13 @@ function getEffectiveUsers() {
   const real = getUsers();
   if (process.env.NODE_ENV !== 'development') return real;
 
-  const seed = readJSON(SEED_USERS_FILE) || [];
+  let seed;
+  try {
+    seed = readJSON(SEED_USERS_FILE) || [];
+  } catch (_) {
+    // seed-users.json unreadable — proceed with real users only
+    return real;
+  }
   if (seed.length === 0) return real;
 
   const realIds = new Set(real.map(u => u.id));
