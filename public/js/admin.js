@@ -531,19 +531,21 @@ function renderUsers() {
       <td style="color:var(--text-muted);font-size:0.875rem">${u.email}</td>
       <td><span class="badge badge-${u.role}">${u.role}</span></td>
       <td style="color:var(--text-muted);font-size:0.8rem">${new Date(u.joinedAt).toLocaleDateString()}</td>
-      <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
-        ${!isSelf ? `
-          <button class="btn btn-sm btn-secondary"
-            data-action="toggle-role"
-            data-user-id="${u.id}"
-            data-role="${u.role}">
-            ${u.role === 'admin' ? 'Demote' : 'Make Admin'}
-          </button>
-          <button class="btn btn-sm btn-danger"
-            data-action="remove-user"
-            data-user-id="${u.id}"
-            data-name="${u.name}">Remove</button>
-        ` : ''}
+      <td>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+          ${!isSelf ? `
+            <button class="btn btn-sm btn-secondary"
+              data-action="toggle-role"
+              data-user-id="${u.id}"
+              data-role="${u.role}">
+              ${u.role === 'admin' ? 'Demote' : 'Make Admin'}
+            </button>
+            <button class="btn btn-sm btn-danger"
+              data-action="remove-user"
+              data-user-id="${u.id}"
+              data-name="${u.name}">Remove</button>
+          ` : ''}
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
