@@ -1,10 +1,8 @@
 # Runtime data — managed on server, not in repo
-data/**/*.json
-!data/users.json
-!data/invites.json
-
-# Session files written by session-file-store
+data/weeks/
+data/picks/
 data/sessions/
+data/config.json
 
 # Logs
 logs
