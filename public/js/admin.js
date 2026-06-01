@@ -2,9 +2,12 @@
 
 let currentUser = null;
 let currentWeekNumber = null;
-let fetchedGames = [];
+let fetchedGames = [];       // all games returned by the server (already filtered)
+let overflowGames = [];      // games that passed filters but exceeded the 30-game cap
 let selectedGameIds = new Set();
 let tiebreakerGameId = null;
+let tiebreakerReason = null; // 'mnf' | 'snf' | null
+let reviewConfirmed = false;
 let users = [];
 let invites = [];
 let currentWeekData = null;
@@ -64,6 +67,8 @@ async function fetchGames() {
 
   loading.style.display = '';
   result.style.display = 'none';
+  document.getElementById('review-section').style.display = 'none';
+  document.getElementById('publish-section').style.display = 'none';
   btn.disabled = true;
 
   try {
@@ -71,19 +76,17 @@ async function fetchGames() {
     if (!data) return;
 
     fetchedGames = data.games;
-    selectedGameIds.clear();
-    tiebreakerGameId = null;
 
     if (data.requestsRemaining != null) {
       document.getElementById('api-remaining').textContent = `${data.requestsRemaining} API calls remaining`;
     }
 
     document.getElementById('games-count-label').textContent =
-      `${fetchedGames.length} game${fetchedGames.length !== 1 ? 's' : ''} available`;
+      `${fetchedGames.length} game${fetchedGames.length !== 1 ? 's' : ''} available after filters`;
 
+    autoSelectGames();
     renderAvailableGames();
     result.style.display = '';
-    updatePublishSection();
   } catch (err) {
     alert(`Failed to fetch games: ${err.message}`);
   } finally {
@@ -91,6 +94,85 @@ async function fetchGames() {
     btn.disabled = false;
   }
 }
+
+function autoSelectGames() {
+  selectedGameIds.clear();
+  overflowGames = [];
+  reviewConfirmed = false;
+
+  // Games are already sorted by commenceTime from the server
+  if (fetchedGames.length <= 30) {
+    fetchedGames.forEach(g => selectedGameIds.add(g.id));
+  } else {
+    fetchedGames.slice(0, 30).forEach(g => selectedGameIds.add(g.id));
+    overflowGames = fetchedGames.slice(30);
+  }
+
+  // Auto-detect tiebreaker from selected games
+  const tb = autoDetectTiebreaker();
+  tiebreakerGameId = tb.id;
+  tiebreakerReason = tb.reason;
+
+  // Show overflow banner in the games grid
+  const banner = document.getElementById('overflow-banner');
+  if (overflowGames.length > 0) {
+    banner.textContent =
+      `30 games auto-selected (earliest kickoffs). ${overflowGames.length} additional ` +
+      `game${overflowGames.length !== 1 ? 's' : ''} available — you can add them manually below.`;
+    banner.style.display = '';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  updateReviewButton();
+}
+
+// ── ET timezone helpers (client-side) ─────────────────────────────────────
+
+function getETDayOfWeek(date) {
+  const day = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', weekday: 'long',
+  }).format(date);
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(day);
+}
+
+function getETHour(date) {
+  const hourStr = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', hour: 'numeric', hour12: false,
+  }).format(date);
+  return parseInt(hourStr, 10);
+}
+
+// ── Tiebreaker auto-detection ──────────────────────────────────────────────
+
+function autoDetectTiebreaker() {
+  const selected = fetchedGames.filter(g => selectedGameIds.has(g.id));
+
+  // 1. Monday Night Football: latest NFL game on Monday
+  const mnf = selected
+    .filter(g => {
+      if (g.league !== 'NFL') return false;
+      return getETDayOfWeek(new Date(g.commenceTime)) === 1; // Monday
+    })
+    .sort((a, b) => new Date(b.commenceTime) - new Date(a.commenceTime));
+
+  if (mnf.length > 0) return { id: mnf[0].id, reason: 'mnf' };
+
+  // 2. Sunday Night Football: latest NFL game on Sunday at/after 20:00 ET
+  const snf = selected
+    .filter(g => {
+      if (g.league !== 'NFL') return false;
+      const dt = new Date(g.commenceTime);
+      return getETDayOfWeek(dt) === 0 && getETHour(dt) >= 20; // Sunday 8pm+
+    })
+    .sort((a, b) => new Date(b.commenceTime) - new Date(a.commenceTime));
+
+  if (snf.length > 0) return { id: snf[0].id, reason: 'snf' };
+
+  return { id: null, reason: null };
+}
+
+// ── Game grid rendering ────────────────────────────────────────────────────
 
 function renderAvailableGames() {
   const grid = document.getElementById('available-games-grid');
@@ -106,6 +188,7 @@ function renderAvailableGames() {
 
     const kickoff = new Date(game.commenceTime);
     const timeStr = kickoff.toLocaleString('en-US', {
+      timeZone: 'America/New_York',
       weekday: 'short', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit',
     });
@@ -120,9 +203,9 @@ function renderAvailableGames() {
         <div class="gcb-teams">${game.awayTeam} @ ${game.homeTeam}</div>
         <div class="gcb-meta">${game.league} · ${timeStr}</div>
         <div class="gcb-meta">${spreadStr}</div>
-        ${isTb ? '<div class="gcb-tiebreaker">⭐ Tiebreaker</div>' : ''}
+        ${isTb ? `<div class="gcb-tiebreaker">⭐ Tiebreaker (${tiebreakerReason === 'mnf' ? 'MNF' : 'SNF'})</div>` : ''}
       </div>
-      <button class="tiebreaker-select-btn ${isTb ? 'active' : ''}" data-game-id="${game.id}">TB</button>
+      <button class="tiebreaker-select-btn ${isTb ? 'active' : ''}" data-game-id="${game.id}" title="Set as tiebreaker">TB</button>
     `;
 
     card.querySelector('input[type="checkbox"]').addEventListener('change', e => {
@@ -145,44 +228,164 @@ function renderAvailableGames() {
 function toggleGameSelection(gameId) {
   if (selectedGameIds.has(gameId)) {
     selectedGameIds.delete(gameId);
-    if (tiebreakerGameId === gameId) tiebreakerGameId = null;
+    if (tiebreakerGameId === gameId) {
+      tiebreakerGameId = null;
+      tiebreakerReason = null;
+    }
   } else {
     if (selectedGameIds.size >= 30) { alert('Maximum 30 games per week.'); return; }
     selectedGameIds.add(gameId);
   }
+  resetReview();
   renderAvailableGames();
-  updatePublishSection();
+  updateReviewButton();
 }
 
 function setTiebreaker(gameId) {
   tiebreakerGameId = tiebreakerGameId === gameId ? null : gameId;
+  tiebreakerReason = null; // manual override clears the auto reason
   if (tiebreakerGameId && !selectedGameIds.has(gameId)) selectedGameIds.add(gameId);
+  resetReview();
   renderAvailableGames();
-  updateTiebreakerDisplay();
+  updateReviewButton();
 }
 
 function selectAll() {
   fetchedGames.slice(0, 30).forEach(g => selectedGameIds.add(g.id));
+  resetReview();
   renderAvailableGames();
-  updatePublishSection();
+  updateReviewButton();
 }
 
 function clearAll() {
   selectedGameIds.clear();
   tiebreakerGameId = null;
+  tiebreakerReason = null;
+  resetReview();
   renderAvailableGames();
-  updatePublishSection();
+  updateReviewButton();
 }
 
 function updateSelectedCount() {
   document.getElementById('selected-count').textContent = `${selectedGameIds.size} / 30 selected`;
 }
 
-function updatePublishSection() {
-  document.getElementById('publish-section').style.display = selectedGameIds.size > 0 ? '' : 'none';
-  updateTiebreakerDisplay();
-  updateSelectedCount();
+function updateReviewButton() {
+  const btn = document.getElementById('review-btn');
+  btn.style.display = selectedGameIds.size > 0 ? '' : 'none';
 }
+
+function resetReview() {
+  reviewConfirmed = false;
+  document.getElementById('review-section').style.display = 'none';
+  document.getElementById('publish-section').style.display = 'none';
+  document.getElementById('review-confirmed-badge').style.display = 'none';
+  document.getElementById('publish-btn').disabled = true;
+}
+
+// ── Review screen ──────────────────────────────────────────────────────────
+
+function showReviewSection() {
+  renderReviewScreen();
+  document.getElementById('review-section').style.display = '';
+  document.getElementById('review-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderReviewScreen() {
+  const selected = fetchedGames
+    .filter(g => selectedGameIds.has(g.id))
+    .sort((a, b) => new Date(a.commenceTime) - new Date(b.commenceTime));
+
+  // Overflow notice
+  const overflowNotice = document.getElementById('review-overflow-notice');
+  if (overflowGames.length > 0) {
+    overflowNotice.textContent =
+      `${overflowGames.length} additional game${overflowGames.length !== 1 ? 's' : ''} passed filters ` +
+      `but were not auto-selected (30-game cap reached). Add them manually above if needed.`;
+    overflowNotice.style.display = '';
+  } else {
+    overflowNotice.style.display = 'none';
+  }
+
+  // Tiebreaker notice
+  const tbNotice = document.getElementById('review-tiebreaker-notice');
+  const noTbNotice = document.getElementById('review-no-tiebreaker-notice');
+  if (tiebreakerGameId) {
+    const tbGame = fetchedGames.find(g => g.id === tiebreakerGameId);
+    const label = tiebreakerReason === 'mnf'
+      ? 'Monday Night Football (auto)'
+      : tiebreakerReason === 'snf'
+        ? 'Sunday Night Football (auto)'
+        : 'Manual selection';
+    tbNotice.innerHTML = `Tiebreaker: <strong>${tbGame ? `${tbGame.awayTeam} @ ${tbGame.homeTeam}` : tiebreakerGameId}</strong> — ${label}`;
+    tbNotice.style.display = '';
+    noTbNotice.style.display = 'none';
+  } else {
+    tbNotice.style.display = 'none';
+    noTbNotice.style.display = '';
+  }
+
+  // Group games by ET day label
+  const groups = new Map();
+  selected.forEach(g => {
+    const dayLabel = new Date(g.commenceTime).toLocaleDateString('en-US', {
+      timeZone: 'America/New_York',
+      weekday: 'long', month: 'long', day: 'numeric',
+    });
+    if (!groups.has(dayLabel)) groups.set(dayLabel, []);
+    groups.get(dayLabel).push(g);
+  });
+
+  const container = document.getElementById('review-games-list');
+  container.innerHTML = '';
+
+  if (selected.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem">No games selected.</p>';
+    return;
+  }
+
+  groups.forEach((games, day) => {
+    const hdr = document.createElement('div');
+    hdr.className = 'review-day-header';
+    hdr.textContent = `${day} (${games.length} game${games.length !== 1 ? 's' : ''})`;
+    container.appendChild(hdr);
+
+    games.forEach(g => {
+      const isTb = tiebreakerGameId === g.id;
+      const timeStr = new Date(g.commenceTime).toLocaleTimeString('en-US', {
+        timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit',
+      });
+      const row = document.createElement('div');
+      row.className = `review-game-row${isTb ? ' review-game-tb' : ''}`;
+      row.innerHTML = `
+        <span class="review-game-matchup">
+          ${g.awayTeam} @ ${g.homeTeam}
+          ${isTb ? '<span class="tiebreaker-badge" style="margin-left:0.4rem">TB</span>' : ''}
+        </span>
+        <span class="review-game-meta">${g.league} · ${timeStr}</span>
+        <span class="review-game-line">${g.favoredTeam} ${g.spread} | O/U ${g.overUnder ?? '—'}</span>
+      `;
+      container.appendChild(row);
+    });
+  });
+
+  // Summary line
+  const summary = document.createElement('div');
+  summary.style.cssText = 'margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.875rem;color:var(--text-muted)';
+  summary.textContent = `${selected.length} game${selected.length !== 1 ? 's' : ''} selected`;
+  container.appendChild(summary);
+}
+
+function confirmSelection() {
+  reviewConfirmed = true;
+  document.getElementById('review-confirmed-badge').style.display = '';
+  document.getElementById('publish-section').style.display = '';
+  document.getElementById('publish-btn').disabled = false;
+  updateTiebreakerDisplay();
+  document.getElementById('publish-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Publish ────────────────────────────────────────────────────────────────
 
 function updateTiebreakerDisplay() {
   const el = document.getElementById('tiebreaker-display');
@@ -203,6 +406,7 @@ async function publishWeek() {
 
   if (!weekNumber || !season) { alert('Week number and season are required.'); return; }
   if (selectedGameIds.size === 0) { alert('Select at least one game.'); return; }
+  if (!reviewConfirmed) { alert('Please review and confirm your selection first.'); return; }
 
   const games = fetchedGames.filter(g => selectedGameIds.has(g.id));
   const msg = document.getElementById('publish-msg');
@@ -229,7 +433,6 @@ async function publishWeek() {
   } catch (err) {
     msg.textContent = `Error: ${err.message}`;
     msg.style.color = 'var(--danger)';
-  } finally {
     btn.disabled = false;
   }
 }
@@ -484,10 +687,19 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => showTab(btn.dataset.tab, btn));
   });
 
-  // Picksheet builder
+  // Picksheet builder — fetch & game grid
   document.getElementById('fetch-games-btn').addEventListener('click', fetchGames);
   document.getElementById('select-all-btn').addEventListener('click', selectAll);
   document.getElementById('clear-all-btn').addEventListener('click', clearAll);
+  document.getElementById('review-btn').addEventListener('click', showReviewSection);
+
+  // Review section
+  document.getElementById('back-to-edit-btn').addEventListener('click', () => {
+    document.getElementById('review-section').style.display = 'none';
+  });
+  document.getElementById('confirm-selection-btn').addEventListener('click', confirmSelection);
+
+  // Publish
   document.getElementById('publish-btn').addEventListener('click', publishWeek);
 
   // Invites
@@ -497,13 +709,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') generateInvite();
   });
 
-  // Event delegation — invites table (revoke buttons rendered dynamically)
+  // Event delegation — invites table
   document.getElementById('invites-body').addEventListener('click', e => {
     const btn = e.target.closest('[data-action="revoke-invite"]');
     if (btn) revokeInvite(btn.dataset.inviteId);
   });
 
-  // Event delegation — users table (role/remove buttons rendered dynamically)
+  // Event delegation — users table
   document.getElementById('users-body').addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;

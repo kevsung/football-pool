@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const { adminOnly } = require('../middleware/adminOnly');
+const { isFBSTeam } = require('../utils/fbsTeams');
 
 const router = express.Router();
 const BASE = 'https://api.the-odds-api.com/v4';
@@ -15,6 +16,7 @@ router.get('/available', adminOnly, async (req, res) => {
       ? ['americanfootball_ncaaf']
       : SPORTS;
 
+  const { windowStart, windowEnd } = getWeekWindow();
   const results = [];
   let remaining = null;
 
@@ -32,7 +34,23 @@ router.get('/available', adminOnly, async (req, res) => {
       remaining = response.headers['x-requests-remaining'];
 
       for (const event of response.data) {
-        if (!hasSpread(event)) continue;
+        const commence = new Date(event.commence_time);
+
+        // 1. Week window: Tuesday 12:00am ET → Monday 11:59pm ET
+        if (commence < windowStart || commence > windowEnd) continue;
+
+        // 2. NFL preseason: skip (sport key is americanfootball_nfl_preseason;
+        //    we only fetch americanfootball_nfl so this is a belt-and-suspenders check)
+        if (sportKey === 'americanfootball_nfl_preseason') continue;
+
+        // 3. NCAAF: both teams must be FBS
+        if (sportKey === 'americanfootball_ncaaf') {
+          if (!isFBSTeam(event.home_team) || !isFBSTeam(event.away_team)) continue;
+        }
+
+        // 4. Both spread and total (over/under) must be available
+        if (!hasSpread(event) || !hasTotal(event)) continue;
+
         results.push(formatEvent(event, sportKey));
       }
     } catch (err) {
@@ -41,11 +59,60 @@ router.get('/available', adminOnly, async (req, res) => {
   }
 
   results.sort((a, b) => new Date(a.commenceTime) - new Date(b.commenceTime));
-  res.json({ games: results, requestsRemaining: remaining });
+  res.json({ games: results, requestsRemaining: remaining, windowStart, windowEnd });
 });
+
+// ── Week window (Tue 12:00am ET → Mon 11:59pm ET) ─────────────────────────
+
+function getWeekWindow() {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+
+  // DST: second Sunday in March 2:00am EST (7:00 UTC)
+  //      through first Sunday in November 2:00am EDT (6:00 UTC)
+  const march1 = new Date(Date.UTC(year, 2, 1));
+  const firstSunMarch = march1.getUTCDay() === 0 ? 1 : 8 - march1.getUTCDay();
+  const dstStart = new Date(Date.UTC(year, 2, firstSunMarch + 7, 7));
+
+  const nov1 = new Date(Date.UTC(year, 10, 1));
+  const firstSunNov = nov1.getUTCDay() === 0 ? 1 : 8 - nov1.getUTCDay();
+  const dstEnd = new Date(Date.UTC(year, 10, firstSunNov, 6));
+
+  // ET offset in ms (positive means ET is behind UTC)
+  const etOffsetMs = (now >= dstStart && now < dstEnd) ? 4 * 3600000 : 5 * 3600000;
+
+  // Express current time in ET by shifting into a "UTC-like" space where
+  // getUTC* methods return ET values
+  const etNowMs = now.getTime() - etOffsetMs;
+  const etNow = new Date(etNowMs);
+
+  // Day of week in ET (0=Sun, 1=Mon, 2=Tue, ...)
+  const etDow = etNow.getUTCDay();
+  const daysSinceTue = (etDow - 2 + 7) % 7;
+
+  // Tuesday 00:00:00.000 ET (in the shifted space)
+  const tuesdayEt = new Date(etNowMs - daysSinceTue * 86400000);
+  tuesdayEt.setUTCHours(0, 0, 0, 0);
+
+  // Monday 23:59:59.999 ET (6 days later)
+  const mondayEt = new Date(tuesdayEt.getTime() + 6 * 86400000);
+  mondayEt.setUTCHours(23, 59, 59, 999);
+
+  // Shift back to real UTC
+  return {
+    windowStart: new Date(tuesdayEt.getTime() + etOffsetMs),
+    windowEnd:   new Date(mondayEt.getTime() + etOffsetMs),
+  };
+}
+
+// ── Market helpers ─────────────────────────────────────────────────────────
 
 function hasSpread(event) {
   return event.bookmakers?.some(b => b.markets?.some(m => m.key === 'spreads'));
+}
+
+function hasTotal(event) {
+  return event.bookmakers?.some(b => b.markets?.some(m => m.key === 'totals'));
 }
 
 function formatEvent(event, sportKey) {

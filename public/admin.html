@@ -60,15 +60,37 @@
 
     <div id="games-loading" class="loading" style="display:none" aria-live="polite">Fetching from Odds API…</div>
     <div id="games-fetch-result" style="display:none">
+      <div id="overflow-banner" class="alert alert-warning" style="display:none;margin-bottom:0.75rem" aria-live="polite"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">
         <span id="games-count-label" style="font-size:0.875rem;color:var(--text-muted)"></span>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
           <span id="selected-count" style="font-size:0.875rem;font-weight:600" aria-live="polite"></span>
           <button class="btn btn-sm btn-secondary" id="select-all-btn">Select All</button>
           <button class="btn btn-sm btn-secondary" id="clear-all-btn">Clear All</button>
+          <button class="btn btn-sm btn-primary" id="review-btn" style="display:none">Review Selection →</button>
         </div>
       </div>
       <div class="admin-grid" id="available-games-grid"></div>
+    </div>
+
+    <!-- ── Review Section ──────────────────────────────────────────────────── -->
+    <div id="review-section" style="display:none;margin-top:1.5rem">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+          <h2 style="font-size:1rem;margin:0">Review Selection</h2>
+          <button class="btn btn-sm btn-secondary" id="back-to-edit-btn">← Back to Edit</button>
+        </div>
+        <div id="review-overflow-notice" class="alert alert-warning" style="display:none;margin-bottom:0.75rem"></div>
+        <div id="review-tiebreaker-notice" class="alert alert-info" style="display:none;margin-bottom:0.75rem"></div>
+        <div id="review-no-tiebreaker-notice" class="alert alert-warning" style="display:none;margin-bottom:0.75rem">
+          No Monday Night Football or Sunday Night Football game found. Please designate a tiebreaker manually in the publish form below.
+        </div>
+        <div id="review-games-list"></div>
+        <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+          <button class="btn btn-primary" id="confirm-selection-btn">Confirm Selection &amp; Continue</button>
+          <span id="review-confirmed-badge" class="badge badge-used" style="display:none">✓ Confirmed</span>
+        </div>
+      </div>
     </div>
 
     <div id="publish-section" style="display:none;margin-top:1.5rem">
@@ -89,9 +111,9 @@
           </div>
         </div>
         <div id="tiebreaker-display" class="alert alert-info" style="margin-bottom:0.75rem;display:none">
-          Tiebreaker game: <strong id="tiebreaker-label"></strong>
+          Tiebreaker: <strong id="tiebreaker-label"></strong>
         </div>
-        <button class="btn btn-primary" id="publish-btn">Publish Week</button>
+        <button class="btn btn-primary" id="publish-btn" disabled>Publish Week</button>
         <span id="publish-msg" style="font-size:0.875rem;margin-left:0.75rem" aria-live="polite"></span>
       </div>
     </div>

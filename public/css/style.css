@@ -922,6 +922,41 @@ thead th.ap-name-col { z-index: 3; }
 .picks-key-check { width: 16px; height: 16px; accent-color: var(--warning); cursor: pointer; }
 .picks-key-check:disabled { cursor: default; opacity: 0.4; }
 
+/* ── Picksheet review screen ─────────────────────────────────────────── */
+.review-day-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.6rem 0 0.35rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.4rem;
+}
+.review-day-header:not(:first-child) { margin-top: 1rem; }
+
+.review-game-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  background: var(--bg-card);
+  flex-wrap: wrap;
+}
+.review-game-row.review-game-tb {
+  border-color: var(--purple);
+  background: rgba(102,57,186,.04);
+}
+[data-theme="dark"] .review-game-row.review-game-tb { background: rgba(188,140,255,.05); }
+
+.review-game-matchup { font-weight: 600; flex: 1; min-width: 180px; }
+.review-game-meta    { color: var(--text-muted); white-space: nowrap; }
+.review-game-line    { color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; margin-left: auto; }
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .games-grid { grid-template-columns: 1fr; }
