@@ -43,6 +43,7 @@
     <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-invites"   data-tab="invites">Invites</button>
     <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-users"     data-tab="users">Users</button>
     <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-settings"  data-tab="settings">Settings</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-scores"    data-tab="scores" id="score-entry-tab-btn" style="display:none">Score Entry</button>
   </div>
 
   <!-- ── Picksheet Builder ─────────────────────────────────────────────── -->
@@ -91,6 +92,9 @@
         <div id="review-tiebreaker-notice" class="alert alert-info" style="display:none;margin-bottom:0.75rem"></div>
         <div id="review-no-tiebreaker-notice" class="alert alert-warning" style="display:none;margin-bottom:0.75rem">
           No Monday Night Football or Sunday Night Football game found. Please designate a tiebreaker manually in the publish form below.
+        </div>
+        <div id="review-lock-notice" class="alert alert-info" style="display:none;margin-bottom:0.75rem">
+          Lock time: <strong id="review-lock-label"></strong>
         </div>
         <div id="review-games-list"></div>
         <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
@@ -225,13 +229,42 @@
       </div>
     </div>
 
-    <div class="card" style="max-width:500px">
+    <div class="card" style="max-width:500px;margin-bottom:1rem">
       <h2 style="font-size:1rem;margin-bottom:0.5rem">Force Score Poll</h2>
       <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">
         Immediately poll The Odds API for updated scores instead of waiting for the next 10-minute cycle.
       </p>
       <button class="btn btn-secondary" id="poll-now-btn">Poll Now</button>
       <span id="poll-msg" style="font-size:0.875rem;margin-left:0.75rem" aria-live="polite"></span>
+    </div>
+
+    <!-- staging only -->
+    <div class="card" id="test-week-card" style="max-width:500px;display:none">
+      <h2 style="font-size:1rem;margin-bottom:0.5rem">Create Test Week</h2>
+      <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem">
+        Creates the next week number with 16 realistic fake games (8 NCAAF, 8 NFL) and a
+        48-hour lock window. No Odds API call needed. The final Monday Night Football game
+        is automatically set as the tiebreaker.
+      </p>
+      <button class="btn btn-secondary" id="create-test-week-btn">Create Test Week</button>
+      <span id="test-week-msg" style="font-size:0.875rem;margin-left:0.75rem;display:block;margin-top:0.5rem" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <!-- ── Score Entry (staging only) ─────────────────────────────────────── -->
+  <div id="tab-scores" class="tab-panel" role="tabpanel">
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <h2 style="font-size:1rem;margin:0">Manual Score Entry</h2>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <label class="form-label" for="score-week-select" style="margin:0;white-space:nowrap">Week:</label>
+          <select class="form-select" id="score-week-select" style="width:90px"></select>
+        </div>
+        <span style="font-size:0.8rem;color:var(--text-muted)">Staging only — set scores manually without an Odds API call</span>
+      </div>
+    </div>
+    <div id="score-entry-container">
+      <p style="color:var(--text-muted);font-size:0.875rem">Select a week to load games.</p>
     </div>
   </div>
 </main>

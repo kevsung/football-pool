@@ -970,6 +970,46 @@ thead th.ap-name-col { z-index: 3; }
 .review-game-meta    { color: var(--text-muted); white-space: nowrap; }
 .review-game-line    { color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; margin-left: auto; }
 
+/* ── Score entry (staging-only admin UI) ─────────────────────────────────── */
+.score-entry-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.5rem;
+  background: var(--bg-card);
+}
+.score-entry-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+.score-entry-matchup { font-weight: 500; }
+.score-entry-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.score-entry-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.score-input {
+  width: 64px !important;
+  text-align: center;
+  padding: 0.2rem 0.3rem !important;
+  font-size: 0.875rem !important;
+}
+.score-entry-dash { color: var(--text-muted); }
+.score-entry-msg  { font-size: 0.8rem; }
+
 /* ── Mobile hamburger button ──────────────────────────────────────────── */
 .hamburger-btn {
   display: none;

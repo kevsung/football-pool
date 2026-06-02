@@ -41,6 +41,9 @@ async function init() {
     if (config.env === 'development' || config.env === 'staging') {
       applyOddsApiDisabledUI();
     }
+    if (config.env === 'staging') {
+      initStagingOnlyUI();
+    }
 
     await Promise.all([loadUsers(), loadInvites(), loadLockStatus(), loadPoolConfig()]);
   } catch (err) {
@@ -59,6 +62,12 @@ function applyOddsApiDisabledUI() {
 
   const card = document.querySelector('#tab-picksheet .card');
   if (card) card.insertAdjacentElement('afterbegin', notice);
+}
+
+function initStagingOnlyUI() {
+  document.getElementById('score-entry-tab-btn').style.display = '';
+  document.getElementById('test-week-card').style.display = '';
+  loadScoreEntryWeeks();
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────
@@ -340,6 +349,25 @@ function renderReviewScreen() {
   } else {
     tbNotice.style.display = 'none';
     noTbNotice.style.display = '';
+  }
+
+  // Lock time notice
+  const lockNotice = document.getElementById('review-lock-notice');
+  const lockLabel = document.getElementById('review-lock-label');
+  const lockRaw = document.getElementById('pub-lock').value;
+  if (lockNotice && lockLabel && lockRaw) {
+    try {
+      lockLabel.textContent = new Date(lockRaw).toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short', month: 'short', day: 'numeric',
+        year: 'numeric', hour: 'numeric', minute: '2-digit',
+      }) + ' ET';
+      lockNotice.style.display = '';
+    } catch (_) {
+      lockNotice.style.display = 'none';
+    }
+  } else if (lockNotice) {
+    lockNotice.style.display = 'none';
   }
 
   // Group games by ET day label
@@ -682,6 +710,158 @@ async function triggerPoll() {
   }
 }
 
+// ── Score entry (staging only) ─────────────────────────────────────────────
+
+async function loadScoreEntryWeeks() {
+  try {
+    const weeks = await api('/api/admin/weeks');
+    if (!weeks || weeks.length === 0) return;
+    const select = document.getElementById('score-week-select');
+    select.innerHTML = '';
+    weeks
+      .sort((a, b) => a.weekNumber - b.weekNumber)
+      .forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w.weekNumber;
+        opt.textContent = `Week ${w.weekNumber}`;
+        select.appendChild(opt);
+      });
+    if (currentWeekNumber) select.value = currentWeekNumber;
+    if (select.value) loadScoreEntryWeek(parseInt(select.value));
+  } catch (_) {}
+}
+
+async function loadScoreEntryWeek(weekNumber) {
+  const container = document.getElementById('score-entry-container');
+  container.innerHTML = '<div class="loading" aria-live="polite">Loading…</div>';
+  try {
+    const week = await api(`/api/admin/weeks/${weekNumber}`);
+    if (!week) return;
+    renderScoreEntryGames(week);
+  } catch (err) {
+    container.innerHTML = `<p style="color:var(--danger)">Error loading week: ${err.message}</p>`;
+  }
+}
+
+function renderScoreEntryGames(week) {
+  const container = document.getElementById('score-entry-container');
+  container.innerHTML = '';
+
+  if (!week.games || week.games.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem">No games in this week.</p>';
+    return;
+  }
+
+  const sorted = [...week.games].sort((a, b) => new Date(a.commenceTime) - new Date(b.commenceTime));
+
+  const groups = new Map();
+  sorted.forEach(g => {
+    const day = new Date(g.commenceTime).toLocaleDateString('en-US', {
+      timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric',
+    });
+    if (!groups.has(day)) groups.set(day, []);
+    groups.get(day).push(g);
+  });
+
+  groups.forEach((games, day) => {
+    const hdr = document.createElement('div');
+    hdr.className = 'review-day-header';
+    hdr.textContent = `${day} (${games.length} game${games.length !== 1 ? 's' : ''})`;
+    container.appendChild(hdr);
+    games.forEach(g => container.appendChild(buildScoreEntryRow(g, week.weekNumber, week.tiebreakerGameId)));
+  });
+}
+
+function buildScoreEntryRow(game, weekNumber, tiebreakerGameId) {
+  const isTb = game.id === tiebreakerGameId;
+  const STATUS_LABEL = { scheduled: 'Scheduled', in_progress: 'In Progress', final: 'Final' };
+  const STATUS_CLASS = { scheduled: 'badge-open', in_progress: 'badge-admin', final: 'badge-used' };
+
+  const timeStr = new Date(game.commenceTime).toLocaleTimeString('en-US', {
+    timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit',
+  });
+
+  const div = document.createElement('div');
+  div.className = 'score-entry-row';
+  div.dataset.gameId = game.id;
+  div.innerHTML = `
+    <div class="score-entry-top">
+      <span class="score-entry-matchup">
+        <span class="badge badge-open" style="font-size:0.7rem;padding:1px 5px;vertical-align:middle">${game.league}</span>
+        ${game.awayTeam} @ ${game.homeTeam}
+        ${isTb ? '<span class="tiebreaker-badge" style="margin-left:0.3rem;vertical-align:middle">TB</span>' : ''}
+      </span>
+      <span style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
+        <span style="font-size:0.75rem;color:var(--text-muted)">${timeStr}</span>
+        <span class="badge ${STATUS_CLASS[game.status] || 'badge-open'} score-status-badge">${STATUS_LABEL[game.status] || game.status}</span>
+      </span>
+    </div>
+    <div class="score-entry-controls">
+      <label class="score-entry-label">Away
+        <input type="number" class="form-input score-input" id="away-${game.id}"
+          value="${game.awayScore !== null ? game.awayScore : ''}"
+          min="0" max="99" placeholder="—" aria-label="${game.awayTeam} score">
+      </label>
+      <span class="score-entry-dash" aria-hidden="true">–</span>
+      <label class="score-entry-label">Home
+        <input type="number" class="form-input score-input" id="home-${game.id}"
+          value="${game.homeScore !== null ? game.homeScore : ''}"
+          min="0" max="99" placeholder="—" aria-label="${game.homeTeam} score">
+      </label>
+      <button class="btn btn-sm btn-primary"
+        data-action="set-final" data-week="${weekNumber}" data-game="${game.id}">Set Final</button>
+      <button class="btn btn-sm btn-secondary"
+        data-action="set-in-progress" data-week="${weekNumber}" data-game="${game.id}">In Progress</button>
+      <button class="btn btn-sm btn-ghost"
+        data-action="reset-game" data-week="${weekNumber}" data-game="${game.id}">Reset</button>
+      <span class="score-entry-msg" aria-live="polite"></span>
+    </div>
+  `;
+  return div;
+}
+
+function updateScoreEntryRowUI(row, game) {
+  const STATUS_LABEL = { scheduled: 'Scheduled', in_progress: 'In Progress', final: 'Final' };
+  const STATUS_CLASS = { scheduled: 'badge-open', in_progress: 'badge-admin', final: 'badge-used' };
+  const awayInput = document.getElementById(`away-${game.id}`);
+  const homeInput = document.getElementById(`home-${game.id}`);
+  if (awayInput) awayInput.value = game.awayScore !== null ? game.awayScore : '';
+  if (homeInput) homeInput.value = game.homeScore !== null ? game.homeScore : '';
+  const badge = row.querySelector('.score-status-badge');
+  if (badge) {
+    badge.textContent = STATUS_LABEL[game.status] || game.status;
+    badge.className = `badge ${STATUS_CLASS[game.status] || 'badge-open'} score-status-badge`;
+  }
+}
+
+// ── Test week (staging only) ───────────────────────────────────────────────
+
+async function createTestWeek() {
+  const btn = document.getElementById('create-test-week-btn');
+  const msg = document.getElementById('test-week-msg');
+  btn.disabled = true;
+  msg.textContent = 'Creating…';
+  msg.style.color = 'var(--text-muted)';
+  try {
+    const result = await api('/api/admin/test-week', { method: 'POST' });
+    if (!result) return;
+    const lockDisplay = new Date(result.lockTime).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+    msg.textContent =
+      `✅ Week ${result.weekNumber} created — ${result.gameCount} games, ` +
+      `lock ${lockDisplay}, TB: ${result.tiebreakerGame}`;
+    msg.style.color = 'var(--accent)';
+    currentWeekNumber = result.weekNumber;
+    loadScoreEntryWeeks();
+    loadLockStatus();
+  } catch (err) {
+    msg.textContent = `Error: ${err.message}`;
+    msg.style.color = 'var(--danger)';
+    btn.disabled = false;
+  }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function nextSaturdayNoon() {
@@ -751,6 +931,60 @@ document.addEventListener('DOMContentLoaded', () => {
   // Settings — lock & poll
   document.getElementById('lock-toggle-btn').addEventListener('click', toggleManualLock);
   document.getElementById('poll-now-btn').addEventListener('click', triggerPoll);
+
+  // Settings — create test week (staging only; button may not be visible but exists in DOM)
+  document.getElementById('create-test-week-btn').addEventListener('click', createTestWeek);
+
+  // Score entry — week selector
+  document.getElementById('score-week-select').addEventListener('change', e => {
+    loadScoreEntryWeek(parseInt(e.target.value));
+  });
+
+  // Score entry — action buttons (event delegation)
+  document.getElementById('score-entry-container').addEventListener('click', async e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const weekNumber = parseInt(btn.dataset.week);
+    const gameId = btn.dataset.game;
+    const action = btn.dataset.action;
+    const row = btn.closest('.score-entry-row');
+    const msg = row.querySelector('.score-entry-msg');
+
+    let body = {};
+    if (action === 'set-final') {
+      const away = document.getElementById(`away-${gameId}`).value;
+      const home = document.getElementById(`home-${gameId}`).value;
+      if (away === '' || home === '') {
+        msg.textContent = 'Enter both scores first.';
+        msg.style.color = 'var(--danger)';
+        return;
+      }
+      body = { awayScore: Number(away), homeScore: Number(home), status: 'final' };
+    } else if (action === 'set-in-progress') {
+      body = { status: 'in_progress' };
+    } else if (action === 'reset-game') {
+      body = { awayScore: null, homeScore: null, status: 'scheduled' };
+    }
+
+    btn.disabled = true;
+    msg.textContent = '';
+    try {
+      const updated = await api(`/api/admin/games/${weekNumber}/${gameId}`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+      if (!updated) return;
+      updateScoreEntryRowUI(row, updated);
+      msg.textContent = '✅ Updated — standings will reflect this change.';
+      msg.style.color = 'var(--accent)';
+      setTimeout(() => { msg.textContent = ''; }, 3000);
+    } catch (err) {
+      msg.textContent = `Error: ${err.message}`;
+      msg.style.color = 'var(--danger)';
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   init();
 });
