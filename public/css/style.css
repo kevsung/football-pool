@@ -71,6 +71,18 @@ input, select, textarea { font-family: inherit; }
   border-radius: var(--radius);
 }
 
+/* ── Staging banner ───────────────────────────────────────────────────── */
+.staging-banner {
+  background: #9a3412;
+  color: #fff;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 0;
+  text-transform: uppercase;
+}
+
 /* ── Header / nav ─────────────────────────────────────────────────────── */
 .site-header {
   background: var(--bg-card);

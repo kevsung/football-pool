@@ -65,13 +65,14 @@ function saveUsers(users) {
   writeJSON(path.join(DATA_DIR, 'users.json'), users);
 }
 
-// Returns real users merged with seed users when NODE_ENV=development.
+// Returns real users merged with seed users when NODE_ENV=development or staging.
 // Use this for display and scoring (leaderboard, picks names).
 // Auth and user-management routes use getUsers() to avoid writing seed
 // users back into users.json.
 function getEffectiveUsers() {
   const real = getUsers();
-  if (process.env.NODE_ENV !== 'development') return real;
+  const env = process.env.NODE_ENV;
+  if (env !== 'development' && env !== 'staging') return real;
 
   let seed;
   try {

@@ -4,6 +4,23 @@
  * Theme selection lives on /settings; this file provides the shared helpers.
  */
 
+// Inject staging banner when server reports NODE_ENV=staging.
+// Prepended inside .site-header so it stays sticky with the header.
+(function injectStagingBanner() {
+  fetch('/api/env')
+    .then(r => r.json())
+    .then(({ env }) => {
+      if (env !== 'staging') return;
+      const banner = document.createElement('div');
+      banner.className = 'staging-banner';
+      banner.textContent = 'STAGING — Test Environment';
+      const header = document.querySelector('.site-header');
+      if (header) header.prepend(banner);
+      else document.body.prepend(banner);
+    })
+    .catch(() => {/* silently ignore — banner is non-critical */});
+}());
+
 function toggleTheme() {
   const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);

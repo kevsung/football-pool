@@ -87,6 +87,10 @@ app.get('/api/pool', (req, res) => {
   res.json(dataStore.getConfig());
 });
 
+app.get('/api/env', (req, res) => {
+  res.json({ env: process.env.NODE_ENV || 'production' });
+});
+
 app.get('/api/config', isAuthenticated, (req, res) => {
   const { poolName } = dataStore.getConfig();
   const allWeeks = dataStore.getAllWeekNumbers();
@@ -97,7 +101,7 @@ app.get('/api/config', isAuthenticated, (req, res) => {
     if (week) weekLocked = !!(week.manualLock || (week.lockTime && new Date(week.lockTime) <= new Date()));
   }
   console.log(`[config] userId=${req.user.id} allWeeks=[${allWeeks}] currentWeek=${weekNumber} weekLocked=${weekLocked}`);
-  res.json({ weekNumber, user: req.user, poolName, weekLocked });
+  res.json({ weekNumber, user: req.user, poolName, weekLocked, env: process.env.NODE_ENV || 'production' });
 });
 
 app.get('/api/weeks/:weekNumber', isAuthenticated, (req, res) => {
@@ -154,15 +158,23 @@ app.get('/access-denied', (req, res) =>
 
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ── Score polling cron (every 10 minutes) ────────────────────────────────────
+// ── Score polling cron ────────────────────────────────────────────────────────
+// Disabled in development and staging — Odds API calls are suppressed there.
+// In production: every 10 minutes.
 
-cron.schedule('*/10 * * * *', async () => {
-  try {
-    await scoresRoutes.pollAndUpdateScores();
-  } catch (err) {
-    console.error('[cron] Score poll failed:', err.message);
-  }
-});
+const _oddsEnv = process.env.NODE_ENV;
+if (_oddsEnv !== 'development' && _oddsEnv !== 'staging') {
+  cron.schedule('*/10 * * * *', async () => {
+    try {
+      await scoresRoutes.pollAndUpdateScores();
+    } catch (err) {
+      console.error('[cron] Score poll failed:', err.message);
+    }
+  });
+  console.log('[cron] Score poll scheduled: every 10 minutes');
+} else {
+  console.log(`[cron] Score poll DISABLED (NODE_ENV=${_oddsEnv})`);
+}
 
 // ── Startup ───────────────────────────────────────────────────────────────────
 

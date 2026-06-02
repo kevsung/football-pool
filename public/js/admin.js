@@ -38,10 +38,27 @@ async function init() {
     document.getElementById('pub-week').value = currentWeekNumber ? currentWeekNumber + 1 : 1;
     document.getElementById('pub-lock').value = nextSaturdayNoon();
 
+    if (config.env === 'development' || config.env === 'staging') {
+      applyOddsApiDisabledUI();
+    }
+
     await Promise.all([loadUsers(), loadInvites(), loadLockStatus(), loadPoolConfig()]);
   } catch (err) {
     alert(`Init error: ${err.message}`);
   }
+}
+
+function applyOddsApiDisabledUI() {
+  const btn = document.getElementById('fetch-games-btn');
+  if (btn) btn.disabled = true;
+
+  const notice = document.createElement('div');
+  notice.className = 'alert alert-warning';
+  notice.style.marginBottom = '1rem';
+  notice.textContent = 'Odds API disabled in this environment — use seed data for testing';
+
+  const card = document.querySelector('#tab-picksheet .card');
+  if (card) card.insertAdjacentElement('afterbegin', notice);
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────

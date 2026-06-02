@@ -6,9 +6,12 @@ const { adminOnly } = require('../middleware/adminOnly');
 const router = express.Router();
 const BASE = 'https://api.the-odds-api.com/v4';
 
+const ODDS_DISABLED = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'staging';
+
 // Polls The Odds API scores endpoint and updates the current week JSON.
 // Called by the cron job every 10 minutes and by the admin manual trigger.
 async function pollAndUpdateScores() {
+  if (ODDS_DISABLED) return { updated: false, reason: 'odds_api_disabled' };
   const weekNumbers = dataStore.getAllWeekNumbers();
   if (weekNumbers.length === 0) return { updated: false };
 

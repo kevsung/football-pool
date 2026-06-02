@@ -7,8 +7,13 @@ const router = express.Router();
 const BASE = 'https://api.the-odds-api.com/v4';
 const SPORTS = ['americanfootball_ncaaf', 'americanfootball_nfl'];
 
+const ODDS_DISABLED = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'staging';
+
 // GET /api/odds/available?sport=all|ncaaf|nfl  (admin only)
 router.get('/available', adminOnly, async (req, res) => {
+  if (ODDS_DISABLED) {
+    return res.status(503).json({ error: 'odds_api_disabled', message: 'Odds API is disabled in this environment.' });
+  }
   const { sport = 'all' } = req.query;
   const toFetch = sport === 'nfl'
     ? ['americanfootball_nfl']
