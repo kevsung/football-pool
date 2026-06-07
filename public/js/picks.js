@@ -482,7 +482,8 @@ function wireTiebreakerInput() {
   const input = document.getElementById('tiebreaker-input');
   if (!input.dataset.wired) {
     input.addEventListener('input', () => {
-      state.tiebreakerScore = input.value !== '' ? parseInt(input.value) : null;
+      const parsed = parseInt(input.value);
+      state.tiebreakerScore = (!isNaN(parsed) && parsed >= 1) ? parsed : null;
       updateCounters();
     });
     input.dataset.wired = '1';
