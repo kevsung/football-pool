@@ -347,13 +347,43 @@ function renderSeasonStandings(standings, isSeason = true) {
 
     const tr = document.createElement('tr');
     if (isSelf) tr.style.background = 'rgba(63,185,80,.05)';
-    tr.innerHTML = `
-      <td class="rank-cell ${rankClass}">${row.rank}${tied ? '<span class="tied-marker">T</span>' : ''}</td>
-      <td style="font-weight:${isSelf ? '600' : '400'}">${row.name}${isSelf ? ' <span style="color:var(--text-muted);font-size:0.75rem">(you)</span>' : ''}</td>
-      <td style="text-align:right;font-weight:700">${row.points}</td>
-      <td style="text-align:right">${row.keyWins}</td>
-      <td style="text-align:right;color:var(--text-muted)">${tbVal}</td>
-    `;
+    const rankTd = document.createElement('td');
+    rankTd.className = `rank-cell ${rankClass}`;
+    rankTd.textContent = row.rank;
+    if (tied) {
+      const t = document.createElement('span');
+      t.className = 'tied-marker';
+      t.textContent = 'T';
+      rankTd.appendChild(t);
+    }
+
+    const nameTd = document.createElement('td');
+    nameTd.style.fontWeight = isSelf ? '600' : '400';
+    nameTd.textContent = row.name;
+    if (isSelf) {
+      const you = document.createElement('span');
+      you.style.cssText = 'color:var(--text-muted);font-size:0.75rem';
+      you.textContent = ' (you)';
+      nameTd.appendChild(you);
+    }
+
+    const pointsTd = document.createElement('td');
+    pointsTd.style.cssText = 'text-align:right;font-weight:700';
+    pointsTd.textContent = row.points;
+
+    const keyWinsTd = document.createElement('td');
+    keyWinsTd.style.textAlign = 'right';
+    keyWinsTd.textContent = row.keyWins;
+
+    const tbTd = document.createElement('td');
+    tbTd.style.cssText = 'text-align:right;color:var(--text-muted)';
+    tbTd.textContent = tbVal;
+
+    tr.appendChild(rankTd);
+    tr.appendChild(nameTd);
+    tr.appendChild(pointsTd);
+    tr.appendChild(keyWinsTd);
+    tr.appendChild(tbTd);
     tbody.appendChild(tr);
   });
 

@@ -454,17 +454,39 @@ function renderInvites() {
   invites.forEach(inv => {
     const usedUser = inv.usedAt ? users.find(u => u.id === inv.usedBy)?.name || 'Unknown' : '';
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${inv.email}</td>
-      <td style="color:var(--text-muted);font-size:0.8rem">${new Date(inv.createdAt).toLocaleDateString()}</td>
-      <td>${inv.usedAt
-        ? '<span class="badge badge-used">Used</span>'
-        : '<span class="badge badge-open">Pending</span>'}</td>
-      <td style="color:var(--text-muted);font-size:0.875rem">${usedUser}</td>
-      <td>${!inv.usedAt
-        ? `<button class="btn btn-sm btn-danger" data-action="revoke-invite" data-invite-id="${inv.id}">Revoke</button>`
-        : ''}</td>
-    `;
+
+    const emailTd = document.createElement('td');
+    emailTd.textContent = inv.email;
+
+    const dateTd = document.createElement('td');
+    dateTd.style.cssText = 'color:var(--text-muted);font-size:0.8rem';
+    dateTd.textContent = new Date(inv.createdAt).toLocaleDateString();
+
+    const statusTd = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = inv.usedAt ? 'badge badge-used' : 'badge badge-open';
+    statusBadge.textContent = inv.usedAt ? 'Used' : 'Pending';
+    statusTd.appendChild(statusBadge);
+
+    const usedByTd = document.createElement('td');
+    usedByTd.style.cssText = 'color:var(--text-muted);font-size:0.875rem';
+    usedByTd.textContent = usedUser;
+
+    const actionTd = document.createElement('td');
+    if (!inv.usedAt) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm btn-danger';
+      btn.dataset.action = 'revoke-invite';
+      btn.dataset.inviteId = inv.id;
+      btn.textContent = 'Revoke';
+      actionTd.appendChild(btn);
+    }
+
+    tr.appendChild(emailTd);
+    tr.appendChild(dateTd);
+    tr.appendChild(statusTd);
+    tr.appendChild(usedByTd);
+    tr.appendChild(actionTd);
     tbody.appendChild(tr);
   });
 }
@@ -526,28 +548,60 @@ function renderUsers() {
   users.forEach(u => {
     const isSelf = u.id === currentUser?.id;
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="font-weight:500">${u.name}${isSelf ? ' <span style="color:var(--text-muted);font-size:0.75rem">(you)</span>' : ''}</td>
-      <td style="color:var(--text-muted);font-size:0.875rem">${u.email}</td>
-      <td><span class="badge badge-${u.role}">${u.role}</span></td>
-      <td style="color:var(--text-muted);font-size:0.8rem">${new Date(u.joinedAt).toLocaleDateString()}</td>
-      <td>
-        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
-          ${!isSelf ? `
-            <button class="btn btn-sm btn-secondary"
-              data-action="toggle-role"
-              data-user-id="${u.id}"
-              data-role="${u.role}">
-              ${u.role === 'admin' ? 'Demote' : 'Make Admin'}
-            </button>
-            <button class="btn btn-sm btn-danger"
-              data-action="remove-user"
-              data-user-id="${u.id}"
-              data-name="${u.name}">Remove</button>
-          ` : ''}
-        </div>
-      </td>
-    `;
+
+    const nameTd = document.createElement('td');
+    nameTd.style.fontWeight = '500';
+    nameTd.textContent = u.name;
+    if (isSelf) {
+      const you = document.createElement('span');
+      you.style.cssText = 'color:var(--text-muted);font-size:0.75rem';
+      you.textContent = ' (you)';
+      nameTd.appendChild(you);
+    }
+
+    const emailTd = document.createElement('td');
+    emailTd.style.cssText = 'color:var(--text-muted);font-size:0.875rem';
+    emailTd.textContent = u.email;
+
+    const roleTd = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = `badge badge-${u.role}`;
+    badge.textContent = u.role;
+    roleTd.appendChild(badge);
+
+    const joinedTd = document.createElement('td');
+    joinedTd.style.cssText = 'color:var(--text-muted);font-size:0.8rem';
+    joinedTd.textContent = new Date(u.joinedAt).toLocaleDateString();
+
+    const actionsTd = document.createElement('td');
+    if (!isSelf) {
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center';
+
+      const roleBtn = document.createElement('button');
+      roleBtn.className = 'btn btn-sm btn-secondary';
+      roleBtn.dataset.action = 'toggle-role';
+      roleBtn.dataset.userId = u.id;
+      roleBtn.dataset.role = u.role;
+      roleBtn.textContent = u.role === 'admin' ? 'Demote' : 'Make Admin';
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'btn btn-sm btn-danger';
+      removeBtn.dataset.action = 'remove-user';
+      removeBtn.dataset.userId = u.id;
+      removeBtn.dataset.name = u.name;
+      removeBtn.textContent = 'Remove';
+
+      div.appendChild(roleBtn);
+      div.appendChild(removeBtn);
+      actionsTd.appendChild(div);
+    }
+
+    tr.appendChild(nameTd);
+    tr.appendChild(emailTd);
+    tr.appendChild(roleTd);
+    tr.appendChild(joinedTd);
+    tr.appendChild(actionsTd);
     tbody.appendChild(tr);
   });
 }

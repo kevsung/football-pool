@@ -39,6 +39,15 @@ router.post('/week/:weekNumber', (req, res) => {
   if (tiebreakerScore == null || isNaN(Number(tiebreakerScore))) {
     return res.status(400).json({ error: 'Tiebreaker score is required' });
   }
+  const tbNum = Number(tiebreakerScore);
+  if (!Number.isInteger(tbNum) || tbNum < 0 || tbNum > 200) {
+    return res.status(400).json({ error: 'Tiebreaker score must be a whole number between 0 and 200' });
+  }
+
+  const uniqueGameIds = new Set(picks.map(p => p.gameId));
+  if (uniqueGameIds.size !== picks.length) {
+    return res.status(400).json({ error: 'Duplicate game picks are not allowed' });
+  }
 
   const gameMap = Object.fromEntries(week.games.map(g => [g.id, g]));
   for (const pick of picks) {
