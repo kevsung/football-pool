@@ -186,8 +186,25 @@ router.put('/games/:weekNumber/:gameId', (req, res) => {
   if (status !== undefined && !VALID_STATUSES.includes(status)) {
     return res.status(400).json({ error: 'status must be scheduled, in_progress, or final' });
   }
-  if (homeScore !== undefined) game.homeScore = homeScore === null ? null : Number(homeScore);
-  if (awayScore !== undefined) game.awayScore = awayScore === null ? null : Number(awayScore);
+
+  const parsedHome = homeScore !== undefined && homeScore !== null ? Number(homeScore) : homeScore;
+  const parsedAway = awayScore !== undefined && awayScore !== null ? Number(awayScore) : awayScore;
+  if (parsedHome !== undefined && parsedHome !== null && !isFinite(parsedHome)) {
+    return res.status(400).json({ error: 'homeScore must be a finite number' });
+  }
+  if (parsedAway !== undefined && parsedAway !== null && !isFinite(parsedAway)) {
+    return res.status(400).json({ error: 'awayScore must be a finite number' });
+  }
+
+  const effectiveStatus = status !== undefined ? status : game.status;
+  const effectiveHome = homeScore !== undefined ? parsedHome : game.homeScore;
+  const effectiveAway = awayScore !== undefined ? parsedAway : game.awayScore;
+  if (effectiveStatus === 'final' && (effectiveHome == null || effectiveAway == null)) {
+    return res.status(400).json({ error: 'Both scores are required when status is final' });
+  }
+
+  if (homeScore !== undefined) game.homeScore = parsedHome;
+  if (awayScore !== undefined) game.awayScore = parsedAway;
   if (status !== undefined) game.status = status;
   week.lastUpdated = new Date().toISOString();
   dataStore.saveWeek(weekNumber, week);

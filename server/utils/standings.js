@@ -59,7 +59,7 @@ function calculateSeasonStandings() {
 
   const stats = {};
   for (const user of users) {
-    stats[user.id] = { userId: user.id, name: user.name, points: 0, keyWins: 0, tiebreakerDiffTotal: 0, weeksPlayed: 0 };
+    stats[user.id] = { userId: user.id, name: user.name, points: 0, keyWins: 0, tiebreakerDiffTotal: 0, tiebreakerWeeks: 0, weeksPlayed: 0 };
   }
 
   for (const weekNumber of weekNumbers) {
@@ -73,7 +73,10 @@ function calculateSeasonStandings() {
 
       stats[userPickSet.userId].points += points;
       stats[userPickSet.userId].keyWins += keyWins;
-      if (diff !== null) stats[userPickSet.userId].tiebreakerDiffTotal += diff;
+      if (diff !== null) {
+        stats[userPickSet.userId].tiebreakerDiffTotal += diff;
+        stats[userPickSet.userId].tiebreakerWeeks++;
+      }
       stats[userPickSet.userId].weeksPlayed++;
     }
   }
@@ -83,12 +86,17 @@ function calculateSeasonStandings() {
   standings.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.keyWins !== a.keyWins) return b.keyWins - a.keyWins;
+    // Players with no tiebreaker weeks sort last; among those with weeks, lower total diff wins
+    if (a.tiebreakerWeeks === 0 && b.tiebreakerWeeks === 0) return 0;
+    if (a.tiebreakerWeeks === 0) return 1;
+    if (b.tiebreakerWeeks === 0) return -1;
     return a.tiebreakerDiffTotal - b.tiebreakerDiffTotal;
   });
 
   assignRanks(standings, (a, b) =>
     a.points === b.points &&
     a.keyWins === b.keyWins &&
+    a.tiebreakerWeeks === b.tiebreakerWeeks &&
     a.tiebreakerDiffTotal === b.tiebreakerDiffTotal
   );
 
