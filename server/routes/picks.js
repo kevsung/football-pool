@@ -40,8 +40,8 @@ router.post('/week/:weekNumber', (req, res) => {
     return res.status(400).json({ error: 'Tiebreaker score is required' });
   }
   const tbNum = Number(tiebreakerScore);
-  if (!Number.isInteger(tbNum) || tbNum < 0 || tbNum > 200) {
-    return res.status(400).json({ error: 'Tiebreaker score must be a whole number between 0 and 200' });
+  if (!Number.isInteger(tbNum) || tbNum < 1 || tbNum > 200) {
+    return res.status(400).json({ error: 'Tiebreaker score must be a whole number between 1 and 200' });
   }
 
   const uniqueGameIds = new Set(picks.map(p => p.gameId));
