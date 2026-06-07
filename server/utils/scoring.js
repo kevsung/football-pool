@@ -1,10 +1,13 @@
-// Returns 'win' | 'push' | 'loss' | null (game not final)
+// Returns 'win' | 'push' | 'loss' | null (game not final or data missing)
 function calculatePickResult(pick, game) {
   if (game.status !== 'final' || game.homeScore == null || game.awayScore == null) {
     return null;
   }
 
   const { homeTeam, favoredTeam, spread } = game;
+  if (!favoredTeam || spread == null || !isFinite(spread)) return null;
+  if (!isFinite(game.homeScore) || !isFinite(game.awayScore)) return null;
+
   const favoredScore = favoredTeam === homeTeam ? game.homeScore : game.awayScore;
   const underdogScore = favoredTeam === homeTeam ? game.awayScore : game.homeScore;
 

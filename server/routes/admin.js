@@ -169,4 +169,124 @@ router.delete('/users/:userId', (req, res) => {
   res.json({ success: true });
 });
 
+// ── Staging / development only: manual score entry ──────────────────────────
+
+router.put('/games/:weekNumber/:gameId', (req, res) => {
+  const env = process.env.NODE_ENV;
+  if (env !== 'staging' && env !== 'development') {
+    return res.status(403).json({ error: 'Only available in staging/development' });
+  }
+  const weekNumber = parseInt(req.params.weekNumber);
+  const week = dataStore.getWeek(weekNumber);
+  if (!week) return res.status(404).json({ error: 'Week not found' });
+  const game = week.games.find(g => g.id === req.params.gameId);
+  if (!game) return res.status(404).json({ error: 'Game not found' });
+  const { homeScore, awayScore, status } = req.body;
+  const VALID_STATUSES = ['scheduled', 'in_progress', 'final'];
+  if (status !== undefined && !VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'status must be scheduled, in_progress, or final' });
+  }
+
+  const parsedHome = homeScore !== undefined && homeScore !== null ? Number(homeScore) : homeScore;
+  const parsedAway = awayScore !== undefined && awayScore !== null ? Number(awayScore) : awayScore;
+  if (parsedHome !== undefined && parsedHome !== null && !isFinite(parsedHome)) {
+    return res.status(400).json({ error: 'homeScore must be a finite number' });
+  }
+  if (parsedAway !== undefined && parsedAway !== null && !isFinite(parsedAway)) {
+    return res.status(400).json({ error: 'awayScore must be a finite number' });
+  }
+
+  const effectiveStatus = status !== undefined ? status : game.status;
+  const effectiveHome = homeScore !== undefined ? parsedHome : game.homeScore;
+  const effectiveAway = awayScore !== undefined ? parsedAway : game.awayScore;
+  if (effectiveStatus === 'final' && (effectiveHome == null || effectiveAway == null)) {
+    return res.status(400).json({ error: 'Both scores are required when status is final' });
+  }
+
+  if (homeScore !== undefined) game.homeScore = parsedHome;
+  if (awayScore !== undefined) game.awayScore = parsedAway;
+  if (status !== undefined) game.status = status;
+  week.lastUpdated = new Date().toISOString();
+  dataStore.saveWeek(weekNumber, week);
+  res.json(game);
+});
+
+// ── Staging / development only: create test week ─────────────────────────────
+
+router.post('/test-week', (req, res) => {
+  const env = process.env.NODE_ENV;
+  if (env !== 'staging' && env !== 'development') {
+    return res.status(403).json({ error: 'Only available in staging/development' });
+  }
+  const allWeekNumbers = dataStore.getAllWeekNumbers();
+  const weekNumber = allWeekNumbers.length > 0 ? Math.max(...allWeekNumbers) + 1 : 1;
+  if (dataStore.getWeek(weekNumber)) {
+    return res.status(409).json({ error: `Week ${weekNumber} already exists` });
+  }
+  const lockTimeMs = Date.now() + 48 * 60 * 60 * 1000;
+  const games = generateTestGames(weekNumber, lockTimeMs);
+  const tiebreakerGameId = games[games.length - 1].id;
+  const week = {
+    weekNumber,
+    season: new Date().getFullYear(),
+    tiebreakerGameId,
+    lockTime: new Date(lockTimeMs).toISOString(),
+    manualLock: false,
+    games,
+    createdAt: new Date().toISOString(),
+    lastUpdated: null,
+  };
+  dataStore.saveWeek(weekNumber, week);
+  const tb = games[games.length - 1];
+  res.status(201).json({
+    weekNumber,
+    gameCount: games.length,
+    lockTime: week.lockTime,
+    tiebreakerGameId,
+    tiebreakerGame: `${tb.awayTeam} @ ${tb.homeTeam}`,
+  });
+});
+
+function generateTestGames(weekNumber, lockTimeMs) {
+  const h = hours => new Date(lockTimeMs + hours * 3600000).toISOString();
+  const raw = [
+    // NCAAF — slot 1: 2h after lock
+    { league:'NCAAF', away:'Michigan Wolverines',          home:'Ohio State Buckeyes',        fav:'Ohio State Buckeyes',        spread:-4,    ou:52.5, t:h(2)     },
+    { league:'NCAAF', away:'Georgia Bulldogs',             home:'Alabama Crimson Tide',       fav:'Alabama Crimson Tide',       spread:-3.5,  ou:54,   t:h(2)     },
+    { league:'NCAAF', away:'Oklahoma Sooners',             home:'Texas Longhorns',            fav:'Texas Longhorns',            spread:-6.5,  ou:58.5, t:h(2)     },
+    // NCAAF — slot 2: 5.5h after lock
+    { league:'NCAAF', away:'Notre Dame Fighting Irish',    home:'USC Trojans',                fav:'USC Trojans',                spread:-2.5,  ou:55.5, t:h(5.5)   },
+    { league:'NCAAF', away:'Iowa Hawkeyes',                home:'Penn State Nittany Lions',   fav:'Penn State Nittany Lions',   spread:-9.5,  ou:41.5, t:h(5.5)   },
+    { league:'NCAAF', away:'Florida State Seminoles',     home:'Clemson Tigers',             fav:'Clemson Tigers',             spread:-4.5,  ou:48.5, t:h(5.5)   },
+    // NCAAF — slot 3: 9h after lock
+    { league:'NCAAF', away:'Washington Huskies',           home:'Oregon Ducks',               fav:'Oregon Ducks',               spread:-5,    ou:53.5, t:h(9)     },
+    { league:'NCAAF', away:'Mississippi State Bulldogs',   home:'LSU Tigers',                 fav:'LSU Tigers',                 spread:-12.5, ou:58.5, t:h(9)     },
+    // NFL Sunday 1pm: 26h after lock
+    { league:'NFL',   away:'Dallas Cowboys',               home:'Philadelphia Eagles',        fav:'Philadelphia Eagles',        spread:-3.5,  ou:47.5, t:h(26)    },
+    { league:'NFL',   away:'Pittsburgh Steelers',          home:'Baltimore Ravens',           fav:'Baltimore Ravens',           spread:-4,    ou:43,   t:h(26)    },
+    { league:'NFL',   away:'Miami Dolphins',               home:'Buffalo Bills',              fav:'Buffalo Bills',              spread:-6,    ou:49.5, t:h(26)    },
+    { league:'NFL',   away:'Green Bay Packers',            home:'Chicago Bears',              fav:'Green Bay Packers',          spread:-5.5,  ou:44,   t:h(26)    },
+    // NFL Sunday 4:25pm: 29.5h after lock
+    { league:'NFL',   away:'Kansas City Chiefs',           home:'Los Angeles Chargers',       fav:'Kansas City Chiefs',         spread:-7,    ou:51.5, t:h(29.5)  },
+    { league:'NFL',   away:'Los Angeles Rams',             home:'San Francisco 49ers',        fav:'San Francisco 49ers',        spread:-3.5,  ou:46.5, t:h(29.5)  },
+    // NFL Sunday Night: 33.5h after lock
+    { league:'NFL',   away:'Detroit Lions',                home:'Minnesota Vikings',          fav:'Detroit Lions',              spread:-2.5,  ou:50.5, t:h(33.5)  },
+    // NFL Monday Night (tiebreaker — always last): 50.25h after lock
+    { league:'NFL',   away:'Cincinnati Bengals',           home:'Cleveland Browns',           fav:'Cincinnati Bengals',         spread:-1,    ou:41.5, t:h(50.25) },
+  ];
+  return raw.map((g, i) => ({
+    id: `tw${weekNumber}-${String(i + 1).padStart(2, '0')}`,
+    league: g.league,
+    awayTeam: g.away,
+    homeTeam: g.home,
+    favoredTeam: g.fav,
+    spread: g.spread,
+    overUnder: g.ou,
+    commenceTime: g.t,
+    status: 'scheduled',
+    homeScore: null,
+    awayScore: null,
+  }));
+}
+
 module.exports = router;
