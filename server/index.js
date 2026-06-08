@@ -56,9 +56,13 @@ if (isProd) {
   });
 }
 
+if (isProd && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable must be set in production');
+}
+
 app.use(session({
   store: sessionStore,      // undefined in dev → falls back to MemoryStore
-  secret: process.env.SESSION_SECRET || 'change-me-in-production',
+  secret: process.env.SESSION_SECRET || 'change-me-in-development',
   resave: false,
   saveUninitialized: false,
   rolling: true,
