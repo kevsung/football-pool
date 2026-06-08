@@ -21,6 +21,10 @@ passport.use(new GoogleStrategy(
   },
   (req, _accessToken, _refreshToken, profile, done) => {
     try {
+      if (!profile.id) {
+        log('rejected: Google profile missing id', {});
+        return done(null, false, { message: 'invalid-profile' });
+      }
       const email = profile.emails?.[0]?.value || '';
 
       log('strategy invoked', {
@@ -70,7 +74,11 @@ passport.use(new GoogleStrategy(
         return done(null, false, { message: 'invalid-invite' });
       }
 
-      if (invite.email && email && invite.email.toLowerCase() !== email.toLowerCase()) {
+      if (!invite.email || !email) {
+        log('rejected: invite or google email missing', { inviteEmail: invite.email || null, googleEmail: email || null });
+        return done(null, false, { message: 'email-mismatch' });
+      }
+      if (invite.email.toLowerCase() !== email.toLowerCase()) {
         log('rejected: email mismatch', { inviteEmail: invite.email, googleEmail: email });
         return done(null, false, { message: 'email-mismatch' });
       }
@@ -125,7 +133,7 @@ router.get('/google', (req, res, next) => {
     inviteToken: req.session.inviteToken || null,
     referer: req.get('referer') || null,
   });
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+  passport.authenticate('google', { scope: ['profile', 'email'], state: true })(req, res, next);
 });
 
 router.get('/google/callback', (req, res, next) => {
@@ -163,18 +171,33 @@ router.get('/google/callback', (req, res, next) => {
       return res.redirect('/access-denied');
     }
 
-    log('authentication succeeded — saving session before redirect', { userId: req.user?.id });
+    const user = req.user;
+    log('authentication succeeded — regenerating session', { userId: user?.id });
 
-    // Explicitly save the session before redirecting. Without this, the
-    // file-store write may not complete before the browser follows the redirect,
-    // causing the next request to arrive with no session and kicking the user
-    // back to the login page.
-    req.session.save(saveErr => {
-      if (saveErr) {
-        log('session save failed', { message: saveErr.message, stack: saveErr.stack });
+    // Regenerate session ID on login to prevent session fixation, then
+    // re-establish the authenticated user in the new session before saving.
+    req.session.regenerate(regenErr => {
+      if (regenErr) {
+        log('session regenerate failed', { message: regenErr.message });
         return res.redirect('/access-denied');
       }
-      res.redirect('/');
+
+      req.login(user, loginErr => {
+        if (loginErr) {
+          log('req.login failed after regenerate', { message: loginErr.message });
+          return res.redirect('/access-denied');
+        }
+
+        // Explicitly save the session before redirecting so the file-store
+        // write completes before the browser follows the redirect.
+        req.session.save(saveErr => {
+          if (saveErr) {
+            log('session save failed', { message: saveErr.message, stack: saveErr.stack });
+            return res.redirect('/access-denied');
+          }
+          res.redirect('/');
+        });
+      });
     });
   });
 });

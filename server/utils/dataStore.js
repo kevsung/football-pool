@@ -87,11 +87,11 @@ function getEffectiveUsers() {
 }
 
 function getUserById(id) {
-  return getEffectiveUsers().find(u => u.id === id) || null;
+  return getUsers().find(u => u.id === id) || null;
 }
 
 function getUserByGoogleId(googleId) {
-  return getEffectiveUsers().find(u => u.googleId === googleId) || null;
+  return getUsers().find(u => u.googleId === googleId) || null;
 }
 
 function getInvites() {
